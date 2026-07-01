@@ -62,9 +62,12 @@ export function createApp(): Application {
   // API v1
   app.use('/api/v1', apiRouter);
 
-  // Serve client static files in production (Render monorepo deployment)
-  if (isProd) {
-    const clientPath = path.resolve(__dirname, '../../client/dist');
+  // Serve client static files (checks if client/dist exists for monorepo deployment)
+  const clientPath = path.resolve(__dirname, '../../client/dist');
+  const fs = require('fs');
+
+  if (fs.existsSync(clientPath)) {
+    // Production monorepo: serve client build
     app.use(express.static(clientPath));
     // SPA fallback: serve index.html for all non-API routes
     app.get(/^(?!\/api).*/, (_req, res) => {
