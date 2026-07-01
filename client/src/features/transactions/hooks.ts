@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
@@ -6,32 +7,43 @@ import {
 import * as txnApi from './transaction.api';
 import type {
   CreateTransactionPayload,
-  Transaction,
+  TransactionFilters,
   UpdateTransactionPayload,
 } from './transaction.types';
 
 export const transactionKeys = {
   all: ['transactions'] as const,
+  list: (filters: TransactionFilters) =>
+    ['transactions', 'list', filters] as const,
 };
 
-export function useTransactions() {
+export function useTransactions(filters: TransactionFilters) {
   return useQuery({
-    queryKey: transactionKeys.all,
-    queryFn: txnApi.listTransactions,
+    queryKey: transactionKeys.list(filters),
+    queryFn: () => txnApi.listTransactions(filters),
+    // Keep showing the previous page/results while the next query loads,
+    // avoiding a flash of empty state during pagination/filtering.
+    placeholderData: keepPreviousData,
   });
 }
 
-export function useCreateTransaction() {
+function useInvalidateTransactions() {
   const qc = useQueryClient();
+  // Invalidate every transactions list regardless of its filters.
+  return () => qc.invalidateQueries({ queryKey: transactionKeys.all });
+}
+
+export function useCreateTransaction() {
+  const invalidate = useInvalidateTransactions();
   return useMutation({
     mutationFn: (payload: CreateTransactionPayload) =>
       txnApi.createTransaction(payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: transactionKeys.all }),
+    onSuccess: invalidate,
   });
 }
 
 export function useUpdateTransaction() {
-  const qc = useQueryClient();
+  const invalidate = useInvalidateTransactions();
   return useMutation({
     mutationFn: ({
       id,
@@ -40,28 +52,16 @@ export function useUpdateTransaction() {
       id: string;
       payload: UpdateTransactionPayload;
     }) => txnApi.updateTransaction(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: transactionKeys.all }),
+    onSuccess: invalidate,
   });
 }
 
 export function useDeleteTransaction() {
-  const qc = useQueryClient();
+  const invalidate = useInvalidateTransactions();
   return useMutation({
     mutationFn: (id: string) => txnApi.deleteTransaction(id),
-    // Optimistic delete: remove the row immediately, roll back on failure.
-    onMutate: async (id: string) => {
-      await qc.cancelQueries({ queryKey: transactionKeys.all });
-      const previous = qc.getQueryData<Transaction[]>(transactionKeys.all);
-      qc.setQueryData<Transaction[]>(transactionKeys.all, (old) =>
-        (old ?? []).filter((t) => t._id !== id),
-      );
-      return { previous };
-    },
-    onError: (_err, _id, context) => {
-      if (context?.previous) {
-        qc.setQueryData(transactionKeys.all, context.previous);
-      }
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: transactionKeys.all }),
+    // With server-side pagination the page's totals change on delete, so we
+    // refetch rather than surgically editing every cached filter combination.
+    onSuccess: invalidate,
   });
 }

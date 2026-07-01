@@ -1,10 +1,14 @@
 import type { Request, Response } from 'express';
 import { catchAsync } from '../utils/catchAsync';
 import * as transactionService from '../services/transaction.service';
+import type { ListTransactionsQuery } from '../validators/transaction.validators';
 
 export const list = catchAsync(async (req: Request, res: Response) => {
-  const transactions = await transactionService.listTransactions(req.user!.id);
-  res.status(200).json({ success: true, data: transactions });
+  const { items, meta } = await transactionService.listTransactions(
+    req.user!.id,
+    req.query as unknown as ListTransactionsQuery,
+  );
+  res.status(200).json({ success: true, data: items, meta });
 });
 
 export const getOne = catchAsync(async (req: Request, res: Response) => {

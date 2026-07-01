@@ -7,6 +7,7 @@ interface CategorySelectProps
   categoryType?: CategoryType;
   label?: string;
   error?: string;
+  placeholder?: string;
 }
 
 /**
@@ -15,7 +16,7 @@ interface CategorySelectProps
  */
 const CategorySelect = forwardRef<HTMLSelectElement, CategorySelectProps>(
   function CategorySelect(
-    { categoryType, label, error, id, className = '', ...rest },
+    { categoryType, label, error, placeholder, id, className = '', ...rest },
     ref,
   ) {
     const { data: categories = [], isLoading } = useCategories(categoryType);
@@ -48,7 +49,7 @@ const CategorySelect = forwardRef<HTMLSelectElement, CategorySelectProps>(
           {...rest}
         >
           <option value="">
-            {isLoading ? 'Loading…' : 'Select a category'}
+            {isLoading ? 'Loading…' : (placeholder ?? 'Select a category')}
           </option>
           {categories.map((c) => (
             <option key={c._id} value={c._id}>

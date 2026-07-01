@@ -1,10 +1,28 @@
-import { Transaction, type TransactionDocument } from '../models/Transaction';
+import type { FilterQuery, SortOrder } from 'mongoose';
+import {
+  Transaction,
+  type ITransaction,
+  type TransactionDocument,
+} from '../models/Transaction';
 import { Category } from '../models/Category';
 import { AppError } from '../utils/AppError';
 import type {
   CreateTransactionInput,
+  ListTransactionsQuery,
   UpdateTransactionInput,
 } from '../validators/transaction.validators';
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+/** Escapes user input so it can be safely used inside a RegExp. */
+function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 /**
  * Ensures the category exists, is usable by this user (owned or a system
@@ -31,11 +49,52 @@ async function assertCategoryUsable(
 
 export async function listTransactions(
   userId: string,
-): Promise<TransactionDocument[]> {
-  // Full search/filter/sort/pagination arrives in Phase 4.
-  return Transaction.find({ user: userId })
-    .sort({ date: -1, createdAt: -1 })
-    .populate('category', 'name icon color type');
+  query: ListTransactionsQuery,
+): Promise<{ items: TransactionDocument[]; meta: PaginationMeta }> {
+  const filter: FilterQuery<ITransaction> = { user: userId };
+
+  if (query.type) filter.type = query.type;
+  if (query.categoryId) filter.category = query.categoryId;
+
+  if (query.from || query.to) {
+    filter.date = {};
+    if (query.from) filter.date.$gte = query.from;
+    if (query.to) filter.date.$lte = query.to;
+  }
+
+  if (query.q) {
+    filter.note = { $regex: escapeRegex(query.q), $options: 'i' };
+  }
+
+  // Parse "-field" / "field" into a Mongoose sort spec, with a stable
+  // secondary tiebreaker so pagination is deterministic.
+  const desc = query.sort.startsWith('-');
+  const field = query.sort.replace(/^-/, '');
+  const sort: Record<string, SortOrder> = {
+    [field]: desc ? -1 : 1,
+    _id: -1,
+  };
+
+  const skip = (query.page - 1) * query.limit;
+
+  const [items, total] = await Promise.all([
+    Transaction.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(query.limit)
+      .populate('category', 'name icon color type'),
+    Transaction.countDocuments(filter),
+  ]);
+
+  return {
+    items,
+    meta: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / query.limit)),
+    },
+  };
 }
 
 async function findOwnedOrThrow(

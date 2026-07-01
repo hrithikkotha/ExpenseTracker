@@ -4,6 +4,7 @@ import { authGuard } from '../middleware/authGuard';
 import { validate } from '../middleware/validate';
 import {
   createTransactionSchema,
+  listTransactionsSchema,
   transactionIdSchema,
   updateTransactionSchema,
 } from '../validators/transaction.validators';
@@ -12,7 +13,7 @@ const router = Router();
 
 router.use(authGuard);
 
-router.get('/', transactionController.list);
+router.get('/', validate(listTransactionsSchema), transactionController.list);
 router.post(
   '/',
   validate(createTransactionSchema),

@@ -30,3 +30,34 @@ export interface CreateTransactionPayload {
 }
 
 export type UpdateTransactionPayload = Partial<CreateTransactionPayload>;
+
+export type TransactionSort =
+  | 'date'
+  | '-date'
+  | 'amount'
+  | '-amount'
+  | 'createdAt'
+  | '-createdAt';
+
+export interface TransactionFilters {
+  type?: CategoryType;
+  categoryId?: string;
+  from?: string; // ISO (yyyy-mm-dd)
+  to?: string;
+  q?: string;
+  sort?: TransactionSort;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedTransactions {
+  items: Transaction[];
+  meta: PaginationMeta;
+}

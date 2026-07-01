@@ -1,28 +1,108 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
+import Pagination from '../components/ui/Pagination';
 import TransactionFormModal from '../features/transactions/components/TransactionFormModal';
+import TransactionFilterBar from '../features/transactions/components/TransactionFilterBar';
 import {
   useTransactions,
   useDeleteTransaction,
 } from '../features/transactions/hooks';
 import { getErrorMessage } from '../lib/apiError';
 import { formatCurrency, formatDate } from '../lib/format';
-import type { Transaction } from '../features/transactions/transaction.types';
+import { useDebounce } from '../lib/useDebounce';
+import type {
+  Transaction,
+  TransactionFilters,
+  TransactionSort,
+} from '../features/transactions/transaction.types';
+
+const DEFAULT_FILTERS: TransactionFilters = {
+  sort: '-date',
+  page: 1,
+  limit: 10,
+};
+
+/** Header cell that toggles ascending/descending sort for its field. */
+function SortHeader({
+  label,
+  field,
+  sort,
+  onSort,
+  align = 'left',
+}: {
+  label: string;
+  field: 'date' | 'amount';
+  sort: TransactionSort;
+  onSort: (field: 'date' | 'amount') => void;
+  align?: 'left' | 'right';
+}) {
+  const active = sort === field || sort === `-${field}`;
+  const arrow = !active ? '' : sort.startsWith('-') ? ' ↓' : ' ↑';
+  return (
+    <th className={`px-4 py-3 ${align === 'right' ? 'text-right' : ''}`}>
+      <button
+        type="button"
+        onClick={() => onSort(field)}
+        className={`font-inherit uppercase tracking-wide ${
+          active ? 'text-brand-600' : ''
+        }`}
+      >
+        {label}
+        {arrow}
+      </button>
+    </th>
+  );
+}
 
 export default function TransactionsPage() {
   const { user } = useAuth();
   const currency = user?.currency ?? 'USD';
 
-  const { data: transactions = [], isLoading, isError, error } =
-    useTransactions();
+  const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_FILTERS);
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 350);
+
+  // Reset to the first page whenever the search term settles.
+  useEffect(() => {
+    setFilters((f) => ({ ...f, page: 1 }));
+  }, [debouncedSearch]);
+
+  const query = useMemo<TransactionFilters>(
+    () => ({ ...filters, q: debouncedSearch || undefined }),
+    [filters, debouncedSearch],
+  );
+
+  const { data, isLoading, isFetching, isError, error } =
+    useTransactions(query);
   const deleteMutation = useDeleteTransaction();
+
+  const transactions = data?.items ?? [];
+  const meta = data?.meta;
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | undefined>();
   const [toDelete, setToDelete] = useState<Transaction | null>(null);
+
+  // Any filter change resets to page 1; page changes don't.
+  const patchFilter = (patch: Partial<TransactionFilters>) =>
+    setFilters((f) => ({ ...f, ...patch, page: 1 }));
+  const setPage = (page: number) => setFilters((f) => ({ ...f, page }));
+
+  const handleSort = (field: 'date' | 'amount') => {
+    setFilters((f) => ({
+      ...f,
+      sort: f.sort === `-${field}` ? field : (`-${field}` as TransactionSort),
+      page: 1,
+    }));
+  };
+
+  const resetFilters = () => {
+    setSearch('');
+    setFilters(DEFAULT_FILTERS);
+  };
 
   const openCreate = () => {
     setEditing(undefined);
@@ -32,20 +112,26 @@ export default function TransactionsPage() {
     setEditing(t);
     setFormOpen(true);
   };
-
   const confirmDelete = () => {
     if (!toDelete) return;
-    // Optimistic — close immediately; rollback handled in the hook on error.
     deleteMutation.mutate(toDelete._id);
     setToDelete(null);
   };
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-5xl">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold">Transactions</h1>
         <Button onClick={openCreate}>+ Add transaction</Button>
       </div>
+
+      <TransactionFilterBar
+        filters={filters}
+        search={search}
+        onSearchChange={setSearch}
+        onPatch={patchFilter}
+        onReset={resetFilters}
+      />
 
       {isLoading && (
         <div className="flex justify-center py-12 text-brand-600">
@@ -62,23 +148,35 @@ export default function TransactionsPage() {
       {!isLoading && !isError && transactions.length === 0 && (
         <div className="rounded-2xl border border-dashed border-gray-300 py-16 text-center dark:border-gray-700">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            No transactions yet.
+            No transactions match your filters.
           </p>
-          <Button className="mt-4" onClick={openCreate}>
-            Add your first transaction
-          </Button>
         </div>
       )}
 
       {!isLoading && !isError && transactions.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800">
+        <div
+          className={`overflow-hidden rounded-2xl border border-gray-200 transition-opacity dark:border-gray-800 ${
+            isFetching ? 'opacity-60' : ''
+          }`}
+        >
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-400 dark:bg-gray-900">
+            <thead className="bg-gray-50 text-left text-xs text-gray-400 dark:bg-gray-900">
               <tr>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Note</th>
-                <th className="px-4 py-3 text-right">Amount</th>
+                <SortHeader
+                  label="Date"
+                  field="date"
+                  sort={filters.sort ?? '-date'}
+                  onSort={handleSort}
+                />
+                <th className="px-4 py-3 uppercase tracking-wide">Category</th>
+                <th className="px-4 py-3 uppercase tracking-wide">Note</th>
+                <SortHeader
+                  label="Amount"
+                  field="amount"
+                  sort={filters.sort ?? '-date'}
+                  onSort={handleSort}
+                  align="right"
+                />
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -103,9 +201,7 @@ export default function TransactionsPage() {
                   <td
                     className={[
                       'whitespace-nowrap px-4 py-3 text-right font-medium',
-                      t.type === 'income'
-                        ? 'text-green-600'
-                        : 'text-red-600',
+                      t.type === 'income' ? 'text-green-600' : 'text-red-600',
                     ].join(' ')}
                   >
                     {t.type === 'income' ? '+' : '−'}
@@ -127,6 +223,15 @@ export default function TransactionsPage() {
               ))}
             </tbody>
           </table>
+
+          {meta && meta.totalPages > 1 && (
+            <Pagination
+              page={meta.page}
+              totalPages={meta.totalPages}
+              total={meta.total}
+              onPageChange={setPage}
+            />
+          )}
         </div>
       )}
 
