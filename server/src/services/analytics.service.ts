@@ -126,13 +126,18 @@ export async function getSummary(
         as: 'category',
       },
     },
-    { $unwind: '$category' },
+    {
+      $unwind: {
+        path: '$category',
+        preserveNullAndEmptyArrays: true, // Keep transactions without categories
+      },
+    },
     {
       $project: {
         categoryId: '$_id',
-        categoryName: '$category.name',
-        icon: '$category.icon',
-        color: '$category.color',
+        categoryName: { $ifNull: ['$category.name', 'Uncategorized'] },
+        icon: { $ifNull: ['$category.icon', '📝'] },
+        color: { $ifNull: ['$category.color', '#6b7280'] },
         total: 1,
       },
     },

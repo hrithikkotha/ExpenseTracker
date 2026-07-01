@@ -5,6 +5,7 @@ import {
   Receipt,
   PlusCircle,
   Calendar,
+  Wallet,
   Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,7 +15,7 @@ const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/transactions', icon: Receipt, label: 'Transactions' },
   { path: '/add', icon: PlusCircle, label: 'Add', isSpecial: true },
-  { path: '/calendar', icon: Calendar, label: 'Calendar' },
+  { path: '/accounts', icon: Wallet, label: 'Accounts' },
   { path: '/more', icon: Menu, label: 'More' },
 ];
 
