@@ -9,9 +9,8 @@ import PublicOnlyRoute from '../routes/PublicOnlyRoute';
 const DashboardPage = lazy(() => import('../pages/ImprovedDashboardPage'));
 const TransactionsPage = lazy(() => import('../pages/TransactionsPage'));
 const CategoriesPage = lazy(() => import('../pages/CategoriesPage'));
-const BudgetsPage = lazy(() => import('../pages/BudgetsPage'));
 const AccountsPage = lazy(() => import('../pages/AccountsPage').then(m => ({ default: m.AccountsPage })));
-const CalendarPage = lazy(() => import('../pages/CalendarPage').then(m => ({ default: m.CalendarPage })));
+const CalendarPage = lazy(() => import('../pages/ImprovedCalendarPage').then(m => ({ default: m.ImprovedCalendarPage })));
 const ProfilePage = lazy(() => import('../pages/ProfilePage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage'));
 const LoginPage = lazy(() => import('../pages/LoginPage'));
@@ -34,7 +33,6 @@ export const router = createBrowserRouter([
           { path: 'transactions', element: <TransactionsPage /> },
           { path: 'accounts', element: <AccountsPage /> },
           { path: 'categories', element: <CategoriesPage /> },
-          { path: 'budgets', element: <BudgetsPage /> },
           { path: 'calendar', element: <CalendarPage /> },
           { path: 'more', element: <SettingsPage /> },
           { path: 'profile', element: <ProfilePage /> },
