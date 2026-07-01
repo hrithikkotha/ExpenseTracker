@@ -22,7 +22,7 @@ import {
 
 type Range = 'week' | 'month' | 'year';
 
-export default function ImprovedDashboardPage() {
+function ImprovedDashboardPage() {
   const { user } = useAuth();
   const currency = user?.currency ?? 'USD';
   const [range, setRange] = useState<Range>('month');
@@ -196,7 +196,7 @@ export default function ImprovedDashboardPage() {
                           cx="50%"
                           cy="50%"
                           outerRadius={80}
-                          label={(entry) => `${entry.categoryName}: ${((entry.total / summary.totalExpense) * 100).toFixed(1)}%`}
+                          label
                         >
                           {topCategories.map((_, index) => (
                             <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
@@ -386,3 +386,5 @@ export default function ImprovedDashboardPage() {
     </div>
   );
 }
+
+export default ImprovedDashboardPage;

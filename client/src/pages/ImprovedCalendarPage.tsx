@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useCalendarMonth } from '@/features/calendar/hooks';
 import { useTransactions } from '@/features/transactions/hooks';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 export function ImprovedCalendarPage() {
@@ -21,18 +21,17 @@ export function ImprovedCalendarPage() {
     ? new Date(selectedDateObj.getFullYear(), selectedDateObj.getMonth(), selectedDateObj.getDate(), 23, 59, 59)
     : null;
 
-  const { data: transactionsData } = useTransactions(
-    selectedDate
-      ? {
-          from: selectedDateFrom?.toISOString(),
-          to: selectedDateTo?.toISOString(),
-          sort: '-date',
-          page: 1,
-          limit: 100,
-        }
-      : undefined,
-    { enabled: !!selectedDate }
-  );
+  const transactionFilters = selectedDate && selectedDateFrom && selectedDateTo
+    ? {
+        from: selectedDateFrom.toISOString(),
+        to: selectedDateTo.toISOString(),
+        sort: '-date' as const,
+        page: 1,
+        limit: 100,
+      }
+    : { page: 1, limit: 0 };
+
+  const { data: transactionsData } = useTransactions(transactionFilters);
 
   const dayTransactions = transactionsData?.items ?? [];
 
