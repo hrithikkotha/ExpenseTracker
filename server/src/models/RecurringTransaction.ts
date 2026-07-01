@@ -10,6 +10,7 @@ export interface IRecurringTransaction {
   category: Types.ObjectId;
   note?: string;
   frequency: RecurrenceFrequency;
+  executionTime: string; // "HH:MM" format
   startDate: Date;
   endDate?: Date; // null = no end date
   nextOccurrence: Date; // indexed for cron job lookups
@@ -54,6 +55,16 @@ const recurringTransactionSchema = new Schema<IRecurringTransaction>(
       type: String,
       enum: ['daily', 'weekly', 'biweekly', 'monthly', 'yearly'],
       required: true,
+    },
+    executionTime: {
+      type: String, // Format: "HH:MM" (24-hour, e.g., "09:00")
+      default: '09:00',
+      validate: {
+        validator: function(v: string) {
+          return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+        },
+        message: 'executionTime must be in HH:MM format (24-hour)',
+      },
     },
     startDate: { type: Date, required: true },
     endDate: { type: Date },

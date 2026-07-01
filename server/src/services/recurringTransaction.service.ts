@@ -171,9 +171,10 @@ export async function skipNextOccurrence(
   return recurring;
 }
 
-// Called by cron job
+// Called by cron job (runs hourly)
 export async function processRecurringTransactions(): Promise<number> {
   const now = new Date();
+  const currentHour = now.getHours();
 
   const dueTransactions = await RecurringTransaction.find({
     isActive: true,
@@ -184,8 +185,14 @@ export async function processRecurringTransactions(): Promise<number> {
     ],
   });
 
+  // Filter by executionTime - only process if current hour matches
+  const transactionsToProcess = dueTransactions.filter((rt) => {
+    const [targetHour] = rt.executionTime.split(':').map(Number);
+    return targetHour === currentHour;
+  });
+
   let created = 0;
-  for (const recurring of dueTransactions) {
+  for (const recurring of transactionsToProcess) {
     try {
       // Create actual transaction
       await Transaction.create({
