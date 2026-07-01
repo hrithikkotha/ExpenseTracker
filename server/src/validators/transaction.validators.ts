@@ -40,7 +40,7 @@ export const createTransactionSchema = z.object({
     type: z.enum(['income', 'expense']),
     amount,
     accountId: objectId,
-    categoryId: objectId,
+    categoryId: objectId.optional(), // Made optional - categories feature removed
     tagIds: z.array(objectId).optional(),
     note: z.string().trim().max(280).optional(),
     date: z.coerce.date({ invalid_type_error: 'Invalid date' }),

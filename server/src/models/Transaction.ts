@@ -55,9 +55,7 @@ const transactionSchema = new Schema<ITransaction>(
     category: {
       type: Schema.Types.ObjectId,
       ref: 'Category',
-      required: function (this: ITransaction) {
-        return this.type !== 'transfer' && !this.isSplit;
-      },
+      required: false, // Made optional - categories feature removed
     },
     toAccount: {
       type: Schema.Types.ObjectId,
