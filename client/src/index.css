@@ -2,6 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark theme input fixes */
+@layer base {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    @apply bg-background text-foreground border-border;
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="number"]:focus,
+  input[type="date"]:focus,
+  input[type="time"]:focus,
+  input[type="tel"]:focus,
+  input[type="url"]:focus,
+  select:focus,
+  textarea:focus {
+    @apply ring-2 ring-primary border-primary;
+  }
+
+  select option {
+    @apply bg-background text-foreground;
+  }
+
+  /* Date input calendar icon visibility */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(var(--tw-invert-icon, 0));
+  }
+
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    --tw-invert-icon: 1;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

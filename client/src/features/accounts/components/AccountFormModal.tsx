@@ -90,17 +90,17 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/50"
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 bg-background rounded-lg shadow-2xl max-h-[90vh] overflow-hidden mx-4">
+      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 bg-background border border-border rounded-lg shadow-2xl max-h-[90vh] overflow-hidden mx-4">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b">
+          <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-border bg-muted/30">
             <div>
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-lg font-semibold text-foreground">
                 {isEdit ? 'Edit Account' : 'Create Account'}
               </h2>
               <p className="text-xs text-muted-foreground mt-1">
@@ -109,9 +109,9 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
             </div>
             <button
               onClick={() => onOpenChange(false)}
-              className="touch-target rounded-full hover:bg-muted transition-colors"
+              className="touch-target rounded-full hover:bg-muted transition-colors p-2"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-foreground" />
             </button>
           </div>
 

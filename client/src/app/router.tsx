@@ -31,9 +31,9 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <DashboardPage /> },
           { path: 'dashboard', element: <DashboardPage /> },
+          { path: 'analytics', element: <DashboardPage /> },
           { path: 'transactions', element: <TransactionsPage /> },
           { path: 'accounts', element: <AccountsPage /> },
-          { path: 'categories', element: <CategoriesPage /> },
           { path: 'calendar', element: <CalendarPage /> },
           { path: 'more', element: <SettingsPage /> },
           { path: 'profile', element: <ProfilePage /> },
