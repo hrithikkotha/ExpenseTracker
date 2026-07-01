@@ -81,9 +81,9 @@ function ImprovedDashboardPage() {
   const pieColors = ['#ef4444', '#f59e0b', '#f97316', '#8b5cf6', '#3b82f6'];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <div className="flex flex-col gap-4 p-4 md:p-6 border-b bg-background sticky top-0 z-30 backdrop-blur-sm bg-background/95">
+    <div className="min-h-screen flex flex-col bg-background pb-20 md:pb-4">
+      {/* Header - Desktop only (mobile uses MobileAppLayout header) */}
+      <div className="hidden md:flex flex-col gap-4 p-4 md:p-6 border-b bg-background sticky top-0 z-30 backdrop-blur-sm bg-background/95">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Analytics</h1>
@@ -108,6 +108,24 @@ function ImprovedDashboardPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Mobile Range Selector */}
+      <div className="md:hidden flex gap-2 p-4 bg-background border-b overflow-x-auto">
+        {(['week', 'month', 'year'] as const).map((r) => (
+          <button
+            key={r}
+            onClick={() => setRange(r)}
+            className={`
+              px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap
+              ${range === r
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'}
+            `}
+          >
+            {r === 'week' ? 'Week' : r === 'month' ? 'Month' : 'Year'}
+          </button>
+        ))}
       </div>
 
       {/* Content */}

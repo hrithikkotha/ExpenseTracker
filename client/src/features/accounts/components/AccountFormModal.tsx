@@ -94,9 +94,9 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
         onClick={() => onOpenChange(false)}
       />
 
-      {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 bg-background border border-border rounded-lg shadow-2xl max-h-[90vh] overflow-hidden mx-4">
-        <div className="flex flex-col h-full">
+      {/* Modal - Mobile optimized with bottom sheet on small screens */}
+      <div className="fixed left-0 right-0 bottom-0 md:left-1/2 md:top-1/2 z-50 w-full md:max-w-md md:-translate-x-1/2 md:-translate-y-1/2 bg-background border-t md:border border-border md:rounded-lg rounded-t-3xl md:rounded-t-lg shadow-2xl max-h-[90vh] overflow-hidden">
+        <div className="flex flex-col h-full max-h-[90vh]">
           {/* Header */}
           <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-border bg-muted/30">
             <div>
@@ -115,15 +115,15 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
             </button>
           </div>
 
-          {/* Content */}
+          {/* Content - Scrollable */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 pb-6">
               {/* Name */}
               <div>
-                <label className="block text-sm font-medium mb-2">Account Name</label>
+                <label className="block text-sm font-medium mb-2 text-foreground">Account Name *</label>
                 <input
                   {...register('name')}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-3 text-base border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                   placeholder="e.g., Chase Checking"
                 />
                 {errors.name && (
@@ -133,10 +133,10 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
 
               {/* Type */}
               <div>
-                <label className="block text-sm font-medium mb-2">Account Type</label>
+                <label className="block text-sm font-medium mb-2 text-foreground">Account Type *</label>
                 <select
                   {...register('type')}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-3 text-base border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                 >
                   {ACCOUNT_TYPES.map((type) => (
                     <option key={type.value} value={type.value}>
@@ -146,102 +146,107 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
                 </select>
               </div>
 
-              {/* Icon */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Icon (Emoji)</label>
-                <input
-                  {...register('icon')}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-2xl"
-                  placeholder="💵"
-                  maxLength={2}
-                />
-                {errors.icon && (
-                  <p className="mt-1 text-sm text-destructive">{errors.icon.message}</p>
-                )}
+              {/* Icon & Color Row - Compact */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Icon */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-foreground">Icon *</label>
+                  <input
+                    {...register('icon')}
+                    className="w-full px-4 py-3 text-3xl text-center border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+                    placeholder="💵"
+                    maxLength={2}
+                  />
+                  {errors.icon && (
+                    <p className="mt-1 text-xs text-destructive">{errors.icon.message}</p>
+                  )}
+                </div>
+
+                {/* Currency */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-foreground">Currency *</label>
+                  <input
+                    {...register('currency')}
+                    className="w-full px-4 py-3 text-base border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary uppercase bg-background text-foreground"
+                    placeholder="USD"
+                    maxLength={3}
+                  />
+                  {errors.currency && (
+                    <p className="mt-1 text-xs text-destructive">{errors.currency.message}</p>
+                  )}
+                </div>
               </div>
 
               {/* Color */}
               <div>
-                <label className="block text-sm font-medium mb-2">Color</label>
-                <div className="flex gap-2 flex-wrap">
+                <label className="block text-sm font-medium mb-2 text-foreground">Color *</label>
+                <div className="flex gap-3 flex-wrap">
                   {DEFAULT_COLORS.map((color) => (
                     <button
                       key={color}
                       type="button"
                       onClick={() => setValue('color', color)}
                       className={cn(
-                        'w-10 h-10 rounded-full border-2 transition-all',
+                        'w-12 h-12 rounded-full border-4 transition-all touch-target',
                         selectedColor === color ? 'border-foreground scale-110' : 'border-transparent'
                       )}
                       style={{ backgroundColor: color }}
+                      aria-label={`Select color ${color}`}
                     />
                   ))}
                 </div>
               </div>
 
-              {/* Currency */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Currency</label>
-                <input
-                  {...register('currency')}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary uppercase"
-                  placeholder="USD"
-                  maxLength={3}
-                />
-                {errors.currency && (
-                  <p className="mt-1 text-sm text-destructive">{errors.currency.message}</p>
-                )}
-              </div>
-
               {/* Opening Balance */}
               <div>
-                <label className="block text-sm font-medium mb-2">Opening Balance</label>
+                <label className="block text-sm font-medium mb-2 text-foreground">Opening Balance *</label>
                 <input
                   type="number"
                   step="0.01"
                   {...register('openingBalance', { valueAsNumber: true })}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-3 text-base border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                  placeholder="0.00"
                 />
               </div>
 
-              {/* Checkboxes */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2">
+              {/* Checkboxes - Larger touch targets */}
+              <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
+                <label className="flex items-center gap-3 touch-target">
                   <input
                     type="checkbox"
                     {...register('includeInNetWorth')}
-                    className="w-4 h-4"
+                    className="w-5 h-5 rounded border-border"
                   />
-                  <span className="text-sm">Include in net worth</span>
+                  <span className="text-sm text-foreground">Include in net worth</span>
                 </label>
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-3 touch-target">
                   <input
                     type="checkbox"
                     {...register('isDefault')}
-                    className="w-4 h-4"
+                    className="w-5 h-5 rounded border-border"
                   />
-                  <span className="text-sm">Set as default account</span>
+                  <span className="text-sm text-foreground">Set as default account</span>
                 </label>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium mb-2">Notes (Optional)</label>
+                <label className="block text-sm font-medium mb-2 text-foreground">Notes (Optional)</label>
                 <textarea
                   {...register('notes')}
                   rows={3}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                  className="w-full px-4 py-3 text-base border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none bg-background text-foreground"
                   placeholder="Add any notes..."
                 />
               </div>
 
-              {/* Submit */}
+              {/* Submit - Larger touch target */}
               <button
                 type="submit"
                 disabled={createAccount.isPending || updateAccount.isPending}
-                className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                className="w-full py-4 text-lg bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 touch-target"
               >
-                {isEdit ? 'Update Account' : 'Create Account'}
+                {createAccount.isPending || updateAccount.isPending ? 'Saving...' : (isEdit ? 'Update Account' : 'Create Account')}
               </button>
             </form>
           </div>

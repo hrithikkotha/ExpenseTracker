@@ -115,41 +115,44 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto max-w-5xl pb-20 md:pb-4">
+      <div className="mb-6 flex items-center justify-between px-4 md:px-0">
         <h1 className="text-xl font-semibold">Transactions</h1>
         {/* Removed "Add transaction" button - using bottom nav + button instead */}
       </div>
 
-      <TransactionFilterBar
-        filters={filters}
-        search={search}
-        onSearchChange={setSearch}
-        onPatch={patchFilter}
-        onReset={resetFilters}
-      />
+      <div className="px-4 md:px-0">
+        <TransactionFilterBar
+          filters={filters}
+          search={search}
+          onSearchChange={setSearch}
+          onPatch={patchFilter}
+          onReset={resetFilters}
+        />
+      </div>
 
-      {isLoading && (
-        <div className="flex justify-center py-12 text-brand-600">
-          <Spinner className="h-6 w-6" />
-        </div>
-      )}
+      <div className="px-4 md:px-0">
+        {isLoading && (
+          <div className="flex justify-center py-12 text-brand-600">
+            <Spinner className="h-6 w-6" />
+          </div>
+        )}
 
-      {isError && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">
-          {getErrorMessage(error, 'Failed to load transactions')}
-        </p>
-      )}
-
-      {!isLoading && !isError && transactions.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-gray-300 py-16 text-center dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            No transactions match your filters.
+        {isError && (
+          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">
+            {getErrorMessage(error, 'Failed to load transactions')}
           </p>
-        </div>
-      )}
+        )}
 
-      {!isLoading && !isError && transactions.length > 0 && (
+        {!isLoading && !isError && transactions.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-gray-300 py-16 text-center dark:border-gray-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No transactions match your filters.
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !isError && transactions.length > 0 && (
         <div
           className={`overflow-hidden rounded-2xl border border-gray-200 transition-opacity dark:border-gray-800 ${
             isFetching ? 'opacity-60' : ''
@@ -229,7 +232,8 @@ export default function TransactionsPage() {
             />
           )}
         </div>
-      )}
+        )}
+      </div>
 
       <TransactionFormModal
         open={formOpen}

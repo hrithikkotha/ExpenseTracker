@@ -29,8 +29,12 @@ export function useTransactions(filters: TransactionFilters) {
 
 function useInvalidateTransactions() {
   const qc = useQueryClient();
-  // Invalidate every transactions list regardless of its filters.
-  return () => qc.invalidateQueries({ queryKey: transactionKeys.all });
+  // Invalidate transactions, accounts (balance changes), and analytics
+  return () => {
+    qc.invalidateQueries({ queryKey: transactionKeys.all });
+    qc.invalidateQueries({ queryKey: ['accounts'] }); // Invalidate accounts to refresh balances
+    qc.invalidateQueries({ queryKey: ['analytics'] }); // Invalidate analytics to refresh dashboard
+  };
 }
 
 export function useCreateTransaction() {
