@@ -49,7 +49,7 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     isActive: { type: Boolean, default: true },
-    currency: { type: String, default: 'USD', uppercase: true, trim: true },
+    currency: { type: String, default: 'INR', uppercase: true, trim: true }, // Changed to INR (Indian Rupee)
     theme: {
       type: String,
       enum: ['light', 'dark', 'system'],

@@ -10,15 +10,18 @@ import {
   HelpCircle,
   Shield,
   ChevronRight,
+  DollarSign as CurrencyIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { CURRENCIES, getCurrencySymbol } from '../lib/currencies';
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, setUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
 
   const handleLogout = async () => {
     if (confirm('Are you sure you want to log out?')) {
@@ -54,6 +57,12 @@ export default function SettingsPage() {
           description: theme === 'dark' ? 'Dark mode' : 'Light mode',
           onClick: toggleTheme,
           showToggle: true,
+        },
+        {
+          icon: CurrencyIcon,
+          label: 'Currency',
+          description: `${user?.currency || 'INR'} (${getCurrencySymbol(user?.currency || 'INR')})`,
+          onClick: () => setShowCurrencyPicker(true),
         },
         {
           icon: Bell,
@@ -198,6 +207,63 @@ export default function SettingsPage() {
           </p>
         </div>
       </div>
+
+      {/* Currency Picker Modal */}
+      {showCurrencyPicker && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowCurrencyPicker(false)}
+          />
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md mx-4 bg-background border border-border rounded-xl shadow-2xl max-h-[70vh] flex flex-col">
+            <div className="p-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">Select Currency</h3>
+              <p className="text-sm text-muted-foreground mt-1">Choose your preferred currency</p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              {CURRENCIES.map((currency) => (
+                <button
+                  key={currency.code}
+                  onClick={async () => {
+                    try {
+                      // Update user currency
+                      const response = await fetch('/api/v1/users/me', {
+                        method: 'PATCH',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                        },
+                        body: JSON.stringify({ currency: currency.code }),
+                      });
+                      if (response.ok) {
+                        const data = await response.json();
+                        setUser(data.data);
+                        setShowCurrencyPicker(false);
+                      }
+                    } catch (error) {
+                      console.error('Failed to update currency:', error);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors ${
+                    user?.currency === currency.code ? 'bg-primary/10 border border-primary' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{currency.symbol}</span>
+                    <div className="text-left">
+                      <p className="font-medium text-sm text-foreground">{currency.code}</p>
+                      <p className="text-xs text-muted-foreground">{currency.name}</p>
+                    </div>
+                  </div>
+                  {user?.currency === currency.code && (
+                    <div className="w-2 h-2 bg-primary rounded-full" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
