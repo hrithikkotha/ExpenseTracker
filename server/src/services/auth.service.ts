@@ -1,5 +1,6 @@
 import { User, type UserDocument } from '../models/User';
 import { RefreshToken } from '../models/RefreshToken';
+import { Account } from '../models/Account';
 import { AppError } from '../utils/AppError';
 import {
   generateRefreshToken,
@@ -54,6 +55,20 @@ export async function register(
     name: input.name,
     email: input.email,
     password: input.password,
+  });
+
+  // Create default Cash account for new user
+  await Account.create({
+    user: user._id,
+    name: 'Cash',
+    type: 'cash',
+    icon: '💵',
+    color: '#22c55e',
+    currency: user.currency,
+    openingBalance: 0,
+    currentBalance: 0,
+    isDefault: true,
+    includeInNetWorth: true,
   });
 
   return issueTokens(user, meta);

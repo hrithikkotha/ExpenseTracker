@@ -7,6 +7,7 @@ import analyticsRoutes from './analytics.routes';
 import budgetRoutes from './budget.routes';
 import userRoutes from './user.routes';
 import adminRoutes from './admin.routes';
+import accountRoutes from './account.routes';
 
 /**
  * API v1 router.
@@ -19,6 +20,7 @@ router.use('/categories', categoryRoutes);
 router.use('/transactions', transactionRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/budgets', budgetRoutes);
+router.use('/accounts', accountRoutes);
 router.use('/users', userRoutes);
 router.use('/admin', adminRoutes);
 
