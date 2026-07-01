@@ -4,6 +4,7 @@ import AuthLayout from '../layouts/AuthLayout';
 import ProtectedRoute from '../routes/ProtectedRoute';
 import PublicOnlyRoute from '../routes/PublicOnlyRoute';
 import DashboardPage from '../pages/DashboardPage';
+import TransactionsPage from '../pages/TransactionsPage';
 import CategoriesPage from '../pages/CategoriesPage';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: <DashboardPage /> },
+          { path: 'transactions', element: <TransactionsPage /> },
           { path: 'categories', element: <CategoriesPage /> },
         ],
       },

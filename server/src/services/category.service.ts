@@ -1,4 +1,5 @@
 import { Category, type CategoryDocument } from '../models/Category';
+import { Transaction } from '../models/Transaction';
 import { AppError } from '../utils/AppError';
 import type {
   CreateCategoryInput,
@@ -91,7 +92,17 @@ export async function deleteCategory(
   id: string,
 ): Promise<void> {
   const category = await findOwnedOrThrow(userId, id);
+
+  // Prevent orphaning transactions: block deletion while any reference it.
+  const inUse = await Transaction.countDocuments({
+    user: userId,
+    category: id,
+  });
+  if (inUse > 0) {
+    throw AppError.conflict(
+      `This category is used by ${inUse} transaction(s). Reassign or delete them first.`,
+    );
+  }
+
   await category.deleteOne();
-  // Transactions don't exist until Phase 3; category deletion handling for
-  // referencing transactions is addressed there.
 }
