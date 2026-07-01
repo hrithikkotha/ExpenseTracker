@@ -6,6 +6,8 @@ export interface IUser {
   name: string;
   email: string;
   password: string;
+  role: 'user' | 'admin';
+  isActive: boolean;
   currency: string;
   theme: 'light' | 'dark' | 'system';
   isEmailVerified: boolean;
@@ -45,6 +47,8 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
       minlength: 8,
       select: false, // never returned unless explicitly requested
     },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    isActive: { type: Boolean, default: true },
     currency: { type: String, default: 'USD', uppercase: true, trim: true },
     theme: {
       type: String,

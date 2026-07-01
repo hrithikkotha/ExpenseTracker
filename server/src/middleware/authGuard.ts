@@ -6,8 +6,8 @@ import { catchAsync } from '../utils/catchAsync';
 
 /**
  * Verifies the Bearer access token and attaches the user to req.user.
- * Rejects with 401 if the token is missing, malformed, expired, or the
- * user no longer exists. (Account-status enforcement is added in Phase 8.)
+ * Rejects with 401 if the token is missing, malformed, expired, the
+ * user no longer exists, or the account is inactive.
  */
 export const authGuard = catchAsync(
   async (req: Request, _res: Response, next: NextFunction) => {
@@ -28,6 +28,10 @@ export const authGuard = catchAsync(
     const user = await User.findById(payload.sub);
     if (!user) {
       throw AppError.unauthorized('User no longer exists');
+    }
+
+    if (!user.isActive) {
+      throw AppError.forbidden('Account is disabled');
     }
 
     req.user = user;

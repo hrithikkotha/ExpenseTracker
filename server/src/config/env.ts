@@ -31,6 +31,10 @@ const envSchema = z
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
     BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
     REFRESH_COOKIE_NAME: z.string().default('et_rt'),
+
+    // ── Admin (Phase 8) ─────────────────────────────────────────
+    ADMIN_EMAIL: z.string().email().optional(),
+    ADMIN_PASSWORD: z.string().min(8).optional(),
   })
   .superRefine((val, ctx) => {
     // In production the access secret must be explicitly set and strong.
