@@ -154,11 +154,11 @@ export default function TransactionsPage() {
 
         {!isLoading && !isError && transactions.length > 0 && (
         <div
-          className={`overflow-hidden rounded-2xl border border-gray-200 transition-opacity dark:border-gray-800 ${
+          className={`overflow-x-auto rounded-2xl border border-gray-200 transition-opacity dark:border-gray-800 ${
             isFetching ? 'opacity-60' : ''
           }`}
         >
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[800px]">
             <thead className="bg-gray-50 text-left text-xs text-gray-400 dark:bg-gray-900">
               <tr>
                 <SortHeader
@@ -207,12 +207,12 @@ export default function TransactionsPage() {
                     {formatCurrency(t.amount, currency)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <Button variant="ghost" onClick={() => openEdit(t)}>
+                    <Button variant="ghost" onClick={() => openEdit(t)} className="text-xs px-2 py-1">
                       Edit
                     </Button>
                     <Button
                       variant="ghost"
-                      className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                      className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs px-2 py-1"
                       onClick={() => setToDelete(t)}
                     >
                       Delete

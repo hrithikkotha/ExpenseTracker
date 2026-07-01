@@ -12,9 +12,10 @@ export async function updateProfile(
   const user = await User.findById(userId);
   if (!user) throw AppError.notFound('User not found');
 
-  user.name = input.name;
-  user.currency = input.currency;
-  user.theme = input.theme;
+  // Only update fields that are provided
+  if (input.name !== undefined) user.name = input.name;
+  if (input.currency !== undefined) user.currency = input.currency;
+  if (input.theme !== undefined) user.theme = input.theme;
   await user.save();
 
   return user;

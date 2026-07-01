@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 export const updateProfileSchema = z.object({
   body: z.object({
-    name: z.string().trim().min(2, 'Name must be at least 2 characters'),
-    currency: z.string().length(3, 'Currency must be 3 characters'),
-    theme: z.enum(['light', 'dark', 'system']),
+    name: z.string().trim().min(2, 'Name must be at least 2 characters').optional(),
+    currency: z.string().length(3, 'Currency must be 3 characters').optional(),
+    theme: z.enum(['light', 'dark', 'system']).optional(),
   }),
 });
 

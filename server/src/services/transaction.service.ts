@@ -72,6 +72,8 @@ async function updateAccountBalance(
   if (!account) return;
 
   // Recalculate balance from transactions
+  // For account: income = +amount, expense = -amount, transfer out = -amount
+  // For toAccount (transfer in): +amount
   const result = await Transaction.aggregate([
     {
       $match: {
@@ -85,15 +87,23 @@ async function updateAccountBalance(
         balance: {
           $sum: {
             $cond: [
+              // If this is the main account (transaction belongs to this account)
               { $eq: ['$account', account._id] },
               {
                 $cond: [
                   { $eq: ['$type', 'income'] },
-                  '$amount',
-                  { $cond: [{ $eq: ['$type', 'expense'] }, { $multiply: ['$amount', -1] }, { $multiply: ['$amount', -1] }] },
+                  '$amount', // Income: add amount
+                  {
+                    $cond: [
+                      { $eq: ['$type', 'expense'] },
+                      { $multiply: ['$amount', -1] }, // Expense: subtract amount
+                      { $multiply: ['$amount', -1] }, // Transfer out: subtract amount
+                    ],
+                  },
                 ],
               },
-              '$amount', // toAccount (transfer in)
+              // If this is the toAccount (receiving a transfer)
+              '$amount', // Transfer in: add amount
             ],
           },
         },

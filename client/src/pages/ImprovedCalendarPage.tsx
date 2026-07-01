@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { useCalendarMonth } from '@/features/calendar/hooks';
 import { useTransactions } from '@/features/transactions/hooks';
 import { formatCurrency } from '@/lib/utils';
@@ -8,6 +9,8 @@ import { cn } from '@/lib/utils';
 export function ImprovedCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const { user } = useAuth();
+  const currency = user?.currency || 'INR';
   const monthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
   const { data: calendarData = [], isLoading } = useCalendarMonth(monthStr);
@@ -75,7 +78,7 @@ export function ImprovedCalendarPage() {
   const selectedDayData = selectedDate ? dayDataMap.get(selectedDate) : null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background pb-20 md:pb-4">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-30 backdrop-blur-sm bg-background/95">
         <h1 className="text-xl font-bold">Calendar</h1>
@@ -137,16 +140,18 @@ export function ImprovedCalendarPage() {
                       {dayData && (
                         <div className="text-xs space-y-0.5">
                           {dayData.income > 0 && (
-                            <div className="text-green-600 truncate text-[10px]">
-                              +{formatCurrency(dayData.income, 'USD')}
+                            <div className="text-green-600 truncate text-[10px] font-medium">
+                              +{formatCurrency(dayData.income, currency)}
                             </div>
                           )}
                           {dayData.expense > 0 && (
-                            <div className="text-red-600 truncate text-[10px]">
-                              -{formatCurrency(dayData.expense, 'USD')}
+                            <div className="text-red-600 truncate text-[10px] font-medium">
+                              -{formatCurrency(dayData.expense, currency)}
                             </div>
                           )}
-                          <div className="text-muted-foreground text-[10px]">{dayData.count} txn</div>
+                          {dayData.count > 0 && (
+                            <div className="text-muted-foreground text-[10px]">{dayData.count} txn</div>
+                          )}
                         </div>
                       )}
                     </button>
@@ -182,11 +187,11 @@ export function ImprovedCalendarPage() {
                   </h3>
                   {selectedDayData && (
                     <div className="flex items-center gap-4 mt-1 text-sm">
-                      <span className="text-green-600">
-                        +{formatCurrency(selectedDayData.income, 'USD')}
+                      <span className="text-green-600 font-medium">
+                        +{formatCurrency(selectedDayData.income, currency)}
                       </span>
-                      <span className="text-red-600">
-                        -{formatCurrency(selectedDayData.expense, 'USD')}
+                      <span className="text-red-600 font-medium">
+                        -{formatCurrency(selectedDayData.expense, currency)}
                       </span>
                       <span className="text-muted-foreground">
                         {selectedDayData.count} transactions
@@ -240,7 +245,7 @@ export function ImprovedCalendarPage() {
                           }`}
                         >
                           {t.type === 'income' ? '+' : '-'}
-                          {formatCurrency(t.amount, 'USD')}
+                          {formatCurrency(t.amount, currency)}
                         </p>
                       </div>
                     ))}
