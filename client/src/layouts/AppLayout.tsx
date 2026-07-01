@@ -1,9 +1,10 @@
 import { ReactNode, useEffect, useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { MobileAppLayout } from './MobileAppLayout';
 import { DesktopAppLayout } from './DesktopAppLayout';
 
 interface AppLayoutProps {
-  children: ReactNode;
+  children?: ReactNode;
   title?: string;
   actions?: ReactNode;
 }
@@ -21,13 +22,16 @@ export function AppLayout({ children, title, actions }: AppLayoutProps) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // If used as a router layout, render Outlet; otherwise render children
+  const content = children || <Outlet />;
+
   if (isMobile) {
     return (
       <MobileAppLayout title={title} actions={actions}>
-        {children}
+        {content}
       </MobileAppLayout>
     );
   }
 
-  return <DesktopAppLayout>{children}</DesktopAppLayout>;
+  return <DesktopAppLayout>{content}</DesktopAppLayout>;
 }

@@ -11,7 +11,9 @@ import {
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/features/auth/hooks';
+import { logout as logoutApi } from '@/features/auth/auth.api';
+import { clearAccessToken } from '@/lib/tokenStore';
+import { useNavigate } from 'react-router-dom';
 
 const sidebarItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -29,7 +31,13 @@ interface DesktopAppLayoutProps {
 
 export function DesktopAppLayout({ children }: DesktopAppLayoutProps) {
   const location = useLocation();
-  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logoutApi();
+    clearAccessToken();
+    navigate('/login');
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -71,7 +79,7 @@ export function DesktopAppLayout({ children }: DesktopAppLayoutProps) {
         {/* Logout */}
         <div className="p-3 border-t">
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="flex items-center gap-3 w-full px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg transition-colors"
           >
             <LogOut className="w-5 h-5" />
