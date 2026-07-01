@@ -6,7 +6,7 @@ import ProtectedRoute from '../routes/ProtectedRoute';
 import PublicOnlyRoute from '../routes/PublicOnlyRoute';
 
 // Lazy load pages for code splitting
-const DashboardPage = lazy(() => import('../pages/DashboardPage'));
+const DashboardPage = lazy(() => import('../pages/ImprovedDashboardPage'));
 const TransactionsPage = lazy(() => import('../pages/TransactionsPage'));
 const CategoriesPage = lazy(() => import('../pages/CategoriesPage'));
 const BudgetsPage = lazy(() => import('../pages/BudgetsPage'));
