@@ -88,7 +88,45 @@ cd client && npm run build   # vite build includes tsc --noEmit
 
 ## Deployment
 
-### Client (Vercel)
+### Option A: Monorepo on Render (Frontend + Backend Together)
+
+**Recommended for simplicity** — one service, one domain, same-origin requests (no CORS issues).
+
+1. Create Web Service linked to GitHub repo
+2. Settings:
+   - **Root Directory**: Leave blank (empty)
+   - **Build Command**: 
+     ```bash
+     npm install && cd server && npm install && npm run build && cd ../client && npm install && npm run build && cd ..
+     ```
+   - **Start Command**: 
+     ```bash
+     node server/dist/server.js
+     ```
+   - **Environment**: Node 20+
+3. Environment Variables (see table above):
+   - `NODE_ENV=production`
+   - `MONGODB_URI`: `mongodb+srv://...` (Atlas connection string)
+   - `ACCESS_TOKEN_SECRET`: Generate with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`
+   - `CLIENT_URL`: `https://your-app.onrender.com` (Render provides this after creation)
+   - `ADMIN_EMAIL`: Your admin email
+   - `ADMIN_PASSWORD`: Secure admin password
+4. Deploy — Render builds both client + server, serves static files from `client/dist/`
+
+**Seed after first deploy** (via Render Shell):
+```bash
+cd server && npm run seed
+```
+
+**Client environment**: Use `VITE_API_URL=/api/v1` in client `.env` (same origin, no full URL needed).
+
+---
+
+### Option B: Separate Hosts (Vercel + Render)
+
+If you prefer separate deployment for frontend and backend:
+
+#### Client (Vercel)
 
 1. Push to GitHub
 2. Import repo in Vercel
@@ -101,7 +139,7 @@ cd client && npm run build   # vite build includes tsc --noEmit
    - `VITE_API_URL`: `https://your-api.onrender.com/api/v1`
 5. Deploy
 
-### Server (Render)
+#### Server (Render)
 
 1. Create Web Service linked to GitHub repo
 2. Settings:
@@ -109,7 +147,7 @@ cd client && npm run build   # vite build includes tsc --noEmit
    - **Build Command**: `npm install && npm run build`
    - **Start Command**: `node dist/server.js`
    - **Environment**: Node 20+
-3. Environment Variables: (see table above; set `ACCESS_TOKEN_SECRET`, `MONGODB_URI`, `CLIENT_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`)
+3. Environment Variables: (see table above; set `ACCESS_TOKEN_SECRET`, `MONGODB_URI`, `CLIENT_URL=https://your-app.vercel.app`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`)
 4. Auto-deploy on push to main
 
 **Seed on Render**: After first deploy, run seed via Render Shell:
