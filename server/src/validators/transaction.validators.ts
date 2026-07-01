@@ -41,6 +41,7 @@ export const createTransactionSchema = z.object({
     amount,
     accountId: objectId,
     categoryId: objectId,
+    tagIds: z.array(objectId).optional(),
     note: z.string().trim().max(280).optional(),
     date: z.coerce.date({ invalid_type_error: 'Invalid date' }),
   }),
@@ -55,6 +56,7 @@ export const updateTransactionSchema = z.object({
       accountId: objectId.optional(),
       categoryId: objectId.optional(),
       toAccountId: objectId.optional(),
+      tagIds: z.array(objectId).optional(),
       note: z.string().trim().max(280).optional(),
       date: z.coerce.date().optional(),
     })

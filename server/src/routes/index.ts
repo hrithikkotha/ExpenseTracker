@@ -8,6 +8,8 @@ import budgetRoutes from './budget.routes';
 import userRoutes from './user.routes';
 import adminRoutes from './admin.routes';
 import accountRoutes from './account.routes';
+import recurringTransactionRoutes from './recurringTransaction.routes';
+import tagRoutes from './tag.routes';
 
 /**
  * API v1 router.
@@ -21,6 +23,8 @@ router.use('/transactions', transactionRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/budgets', budgetRoutes);
 router.use('/accounts', accountRoutes);
+router.use('/recurring-transactions', recurringTransactionRoutes);
+router.use('/tags', tagRoutes);
 router.use('/users', userRoutes);
 router.use('/admin', adminRoutes);
 

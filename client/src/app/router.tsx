@@ -7,6 +7,7 @@ import DashboardPage from '../pages/DashboardPage';
 import TransactionsPage from '../pages/TransactionsPage';
 import CategoriesPage from '../pages/CategoriesPage';
 import BudgetsPage from '../pages/BudgetsPage';
+import { AccountsPage } from '../pages/AccountsPage';
 import ProfilePage from '../pages/ProfilePage';
 import SettingsPage from '../pages/SettingsPage';
 import LoginPage from '../pages/LoginPage';
@@ -25,9 +26,13 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: <DashboardPage /> },
+          { path: 'dashboard', element: <DashboardPage /> },
           { path: 'transactions', element: <TransactionsPage /> },
+          { path: 'accounts', element: <AccountsPage /> },
           { path: 'categories', element: <CategoriesPage /> },
           { path: 'budgets', element: <BudgetsPage /> },
+          { path: 'calendar', element: <DashboardPage /> }, // TODO: CalendarPage
+          { path: 'more', element: <SettingsPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'settings', element: <SettingsPage /> },
         ],
