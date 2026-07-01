@@ -6,6 +6,7 @@ import PublicOnlyRoute from '../routes/PublicOnlyRoute';
 import DashboardPage from '../pages/DashboardPage';
 import TransactionsPage from '../pages/TransactionsPage';
 import CategoriesPage from '../pages/CategoriesPage';
+import BudgetsPage from '../pages/BudgetsPage';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import NotFoundPage from '../pages/NotFoundPage';
@@ -13,7 +14,6 @@ import NotFoundPage from '../pages/NotFoundPage';
 /**
  * Route tree. The app branch is gated by <ProtectedRoute>; auth pages sit
  * under <PublicOnlyRoute> so signed-in users are bounced to the dashboard.
- * Feature routes (transactions, budgets, ...) are added in later phases.
  */
 export const router = createBrowserRouter([
   {
@@ -25,6 +25,7 @@ export const router = createBrowserRouter([
           { index: true, element: <DashboardPage /> },
           { path: 'transactions', element: <TransactionsPage /> },
           { path: 'categories', element: <CategoriesPage /> },
+          { path: 'budgets', element: <BudgetsPage /> },
         ],
       },
     ],
