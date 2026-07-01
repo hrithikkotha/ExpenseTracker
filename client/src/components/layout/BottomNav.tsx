@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Receipt,
   PlusCircle,
-  Calendar,
   Wallet,
   Menu,
 } from 'lucide-react';
