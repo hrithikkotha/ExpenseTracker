@@ -37,6 +37,7 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
     formState: { errors },
     reset,
     watch,
+    setValue,
   } = useForm<QuickAddInput>({
     resolver: zodResolver(quickAddSchema),
     defaultValues: {
@@ -57,7 +58,13 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
         note: data.note || undefined,
         date: new Date(data.date).toISOString(),
       };
-      console.log('Submitting transaction:', payload);
+      console.log('=== FRONTEND: Submitting Transaction ===');
+      console.log('Type:', payload.type);
+      console.log('Amount:', payload.amount);
+      console.log('Account ID:', payload.accountId);
+      console.log('Full Payload:', JSON.stringify(payload, null, 2));
+      console.log('=======================================');
+
       await createTransaction.mutateAsync(payload);
       onOpenChange(false);
       reset();
@@ -104,7 +111,11 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setType('expense')}
+                onClick={() => {
+                  setType('expense');
+                  setValue('type', 'expense');
+                  console.log('Selected type: expense');
+                }}
                 className={cn(
                   'flex-1 py-3 rounded-lg font-medium transition-colors',
                   type === 'expense'
@@ -116,7 +127,11 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setType('income')}
+                onClick={() => {
+                  setType('income');
+                  setValue('type', 'income');
+                  console.log('Selected type: income');
+                }}
                 className={cn(
                   'flex-1 py-3 rounded-lg font-medium transition-colors',
                   type === 'income'
