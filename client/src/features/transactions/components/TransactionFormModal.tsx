@@ -72,9 +72,13 @@ export default function TransactionFormModal({
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
+    // Note: TransactionFormModal is legacy, QuickAddSheet is the main form now
+    // This modal doesn't have account selector, so we can't properly create transactions
+    // It's only used for editing existing transactions
     const payload = {
       type: values.type,
       amount: values.amount,
+      accountId: '', // Legacy modal - account not available here
       categoryId: values.categoryId,
       date: new Date(values.date).toISOString(),
       note: values.note?.trim() || undefined,

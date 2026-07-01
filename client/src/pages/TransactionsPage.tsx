@@ -104,10 +104,6 @@ export default function TransactionsPage() {
     setFilters(DEFAULT_FILTERS);
   };
 
-  const openCreate = () => {
-    setEditing(undefined);
-    setFormOpen(true);
-  };
   const openEdit = (t: Transaction) => {
     setEditing(t);
     setFormOpen(true);

@@ -185,7 +185,10 @@ export async function createTransaction(
   userId: string,
   input: CreateTransactionInput,
 ): Promise<TransactionDocument> {
-  await assertCategoryUsable(userId, input.categoryId, input.type);
+  // Only validate category if provided (categories are now optional)
+  if (input.categoryId) {
+    await assertCategoryUsable(userId, input.categoryId, input.type);
+  }
   await assertAccountOwned(userId, input.accountId);
 
   const txn = await Transaction.create({
@@ -193,7 +196,7 @@ export async function createTransaction(
     account: input.accountId,
     type: input.type,
     amount: input.amount,
-    category: input.categoryId,
+    category: input.categoryId || undefined, // Optional - categories feature removed
     note: input.note,
     date: input.date,
   });

@@ -8,7 +8,6 @@ import PublicOnlyRoute from '../routes/PublicOnlyRoute';
 // Lazy load pages for code splitting
 const DashboardPage = lazy(() => import('../pages/ImprovedDashboardPage'));
 const TransactionsPage = lazy(() => import('../pages/TransactionsPage'));
-const CategoriesPage = lazy(() => import('../pages/CategoriesPage'));
 const AccountsPage = lazy(() => import('../pages/AccountsPage').then(m => ({ default: m.AccountsPage })));
 const CalendarPage = lazy(() => import('../pages/ImprovedCalendarPage').then(m => ({ default: m.ImprovedCalendarPage })));
 const ProfilePage = lazy(() => import('../pages/ProfilePage'));
