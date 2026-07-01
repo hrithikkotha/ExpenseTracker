@@ -86,7 +86,9 @@ export async function getSummary(
   userId: string,
   query: SummaryQuery,
 ): Promise<Summary> {
-  const match: PipelineStage.Match['$match'] = { user: userId };
+  const match: PipelineStage.Match['$match'] = {
+    user: new Types.ObjectId(userId)
+  };
   if (query.from || query.to) {
     match.date = {};
     if (query.from) match.date.$gte = query.from;
@@ -159,6 +161,7 @@ export async function getTrends(
 ): Promise<Trends> {
   const now = new Date();
   const currentYear = query.year ?? now.getFullYear();
+  const userObjectId = new Types.ObjectId(userId);
 
   let match: PipelineStage.Match['$match'];
   let groupId: Record<string, unknown>;
@@ -168,14 +171,14 @@ export async function getTrends(
     // Last 5 years centered on the requested year
     const start = new Date(`${currentYear - 2}-01-01`);
     const end = new Date(`${currentYear + 2}-12-31T23:59:59`);
-    match = { user: userId, date: { $gte: start, $lte: end } };
+    match = { user: userObjectId, date: { $gte: start, $lte: end } };
     groupId = { year: { $year: '$date' } };
     periodFormat = 'year';
   } else {
     // 12 months of the requested year
     const start = new Date(`${currentYear}-01-01`);
     const end = new Date(`${currentYear}-12-31T23:59:59`);
-    match = { user: userId, date: { $gte: start, $lte: end } };
+    match = { user: userObjectId, date: { $gte: start, $lte: end } };
     groupId = { year: { $year: '$date' }, month: { $month: '$date' } };
     periodFormat = 'month';
   }
