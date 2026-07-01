@@ -66,7 +66,8 @@ export function createApp(): Application {
   if (isProd) {
     const clientPath = path.resolve(__dirname, '../../client/dist');
     app.use(express.static(clientPath));
-    app.get('*', (_req, res) => {
+    // SPA fallback: serve index.html for all non-API routes
+    app.get(/^(?!\/api).*/, (_req, res) => {
       res.sendFile(path.join(clientPath, 'index.html'));
     });
   } else {
