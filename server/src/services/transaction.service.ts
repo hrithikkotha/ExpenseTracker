@@ -72,8 +72,13 @@ async function updateAccountBalance(
   if (!account) return;
 
   // Recalculate balance from transactions
-  // For account: income = +amount, expense = -amount, transfer out = -amount
-  // For toAccount (transfer in): +amount
+  // LOGIC:
+  // - If transaction.account === accountId:
+  //     - income: ADD amount (money coming in)
+  //     - expense: SUBTRACT amount (money going out)
+  //     - transfer: SUBTRACT amount (money going to another account)
+  // - If transaction.toAccount === accountId:
+  //     - ADD amount (money coming from another account via transfer)
   const result = await Transaction.aggregate([
     {
       $match: {
@@ -87,23 +92,30 @@ async function updateAccountBalance(
         balance: {
           $sum: {
             $cond: [
-              // If this is the main account (transaction belongs to this account)
+              // If this transaction belongs to this account (transaction.account === accountId)
               { $eq: ['$account', account._id] },
+              // Then apply these rules based on transaction type:
               {
-                $cond: [
-                  { $eq: ['$type', 'income'] },
-                  '$amount', // Income: add amount
-                  {
-                    $cond: [
-                      { $eq: ['$type', 'expense'] },
-                      { $multiply: ['$amount', -1] }, // Expense: subtract amount
-                      { $multiply: ['$amount', -1] }, // Transfer out: subtract amount
-                    ],
-                  },
-                ],
+                $switch: {
+                  branches: [
+                    {
+                      case: { $eq: ['$type', 'income'] },
+                      then: '$amount', // Income: ADD to balance
+                    },
+                    {
+                      case: { $eq: ['$type', 'expense'] },
+                      then: { $multiply: ['$amount', -1] }, // Expense: SUBTRACT from balance
+                    },
+                    {
+                      case: { $eq: ['$type', 'transfer'] },
+                      then: { $multiply: ['$amount', -1] }, // Transfer out: SUBTRACT from balance
+                    },
+                  ],
+                  default: 0, // Unknown type: don't change balance
+                },
               },
-              // If this is the toAccount (receiving a transfer)
-              '$amount', // Transfer in: add amount
+              // Else this is the toAccount (receiving a transfer)
+              '$amount', // Transfer in: ADD to balance
             ],
           },
         },
@@ -112,6 +124,15 @@ async function updateAccountBalance(
   ]);
 
   const calculatedBalance = result[0]?.balance ?? 0;
+
+  // Debug logging
+  console.log('=== Account Balance Calculation ===');
+  console.log('Account:', account.name, '(', account._id, ')');
+  console.log('Opening Balance:', account.openingBalance);
+  console.log('Calculated Balance from Transactions:', calculatedBalance);
+  console.log('New Current Balance:', account.openingBalance + calculatedBalance);
+  console.log('===================================');
+
   account.currentBalance = account.openingBalance + calculatedBalance;
   await account.save();
 }
@@ -200,6 +221,12 @@ export async function createTransaction(
     await assertCategoryUsable(userId, input.categoryId, input.type);
   }
   await assertAccountOwned(userId, input.accountId);
+
+  console.log('=== Creating Transaction ===');
+  console.log('Type:', input.type);
+  console.log('Amount:', input.amount);
+  console.log('Account ID:', input.accountId);
+  console.log('===========================');
 
   const txn = await Transaction.create({
     user: userId,
