@@ -1,5 +1,6 @@
 import type { PipelineStage } from 'mongoose';
 import { Transaction } from '../models/Transaction';
+import { Types } from 'mongoose';
 import type { SummaryQuery, TrendsQuery } from '../validators/analytics.validators';
 
 interface CategoryBreakdown {
@@ -25,6 +26,61 @@ interface TrendPoint {
 }
 
 export type Trends = TrendPoint[];
+
+export interface CalendarDayData {
+  date: string;
+  income: number;
+  expense: number;
+  net: number;
+  count: number;
+}
+
+export async function getCalendarData(
+  userId: string,
+  month: Date,
+): Promise<CalendarDayData[]> {
+  const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+  const endOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+
+  const result = await Transaction.aggregate([
+    {
+      $match: {
+        user: new Types.ObjectId(userId),
+        date: { $gte: startOfMonth, $lte: endOfMonth },
+        type: { $in: ['income', 'expense'] },
+      },
+    },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+        income: {
+          $sum: {
+            $cond: [{ $eq: ['$type', 'income'] }, '$amount', 0],
+          },
+        },
+        expense: {
+          $sum: {
+            $cond: [{ $eq: ['$type', 'expense'] }, '$amount', 0],
+          },
+        },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        date: '$_id',
+        income: 1,
+        expense: 1,
+        net: { $subtract: ['$income', '$expense'] },
+        count: 1,
+        _id: 0,
+      },
+    },
+    { $sort: { date: 1 } },
+  ]);
+
+  return result;
+}
 
 export async function getSummary(
   userId: string,

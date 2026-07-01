@@ -13,5 +13,6 @@ router.use(authGuard);
 
 router.get('/summary', validate(summarySchema), analyticsController.summary);
 router.get('/trends', validate(trendsSchema), analyticsController.trends);
+router.get('/calendar', analyticsController.getCalendar);
 
 export default router;

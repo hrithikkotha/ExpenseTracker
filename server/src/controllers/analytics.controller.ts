@@ -21,3 +21,11 @@ export const trends = catchAsync(async (req: Request, res: Response) => {
   );
   res.status(200).json({ success: true, data });
 });
+
+export const getCalendar = catchAsync(async (req: Request, res: Response) => {
+  const { month } = req.query;
+  const monthDate = month ? new Date(month as string) : new Date();
+
+  const calendar = await analyticsService.getCalendarData(req.user!.id, monthDate);
+  res.status(200).json({ success: true, data: calendar });
+});
