@@ -13,6 +13,7 @@ const AccountsPage = lazy(() => import('../pages/AccountsPage').then(m => ({ def
 const CalendarPage = lazy(() => import('../pages/ImprovedCalendarPage').then(m => ({ default: m.ImprovedCalendarPage })));
 const ProfilePage = lazy(() => import('../pages/ProfilePage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage'));
+const ExportPage = lazy(() => import('../pages/ExportPage'));
 const LoginPage = lazy(() => import('../pages/LoginPage'));
 const RegisterPage = lazy(() => import('../pages/RegisterPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
           { path: 'more', element: <SettingsPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'settings', element: <SettingsPage /> },
+          { path: 'export', element: <ExportPage /> },
         ],
       },
     ],

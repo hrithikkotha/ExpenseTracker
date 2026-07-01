@@ -9,7 +9,7 @@ interface MobileAppLayoutProps {
 
 export function MobileAppLayout({ children, title, actions }: MobileAppLayoutProps) {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Header */}
       {title && (
         <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -20,12 +20,12 @@ export function MobileAppLayout({ children, title, actions }: MobileAppLayoutPro
         </header>
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-20">
+      {/* Main Content - with safe padding for bottom nav */}
+      <main className="flex-1 overflow-y-auto pb-24 relative">
         {children}
       </main>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - always on top */}
       <BottomNav />
     </div>
   );

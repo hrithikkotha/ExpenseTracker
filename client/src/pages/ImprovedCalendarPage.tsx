@@ -76,9 +76,9 @@ export function ImprovedCalendarPage() {
   const selectedDayData = selectedDate ? dayDataMap.get(selectedDate) : null;
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-background">
+      <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-30 backdrop-blur-sm bg-background/95">
         <h1 className="text-xl font-bold">Calendar</h1>
         <div className="flex items-center gap-2">
           <button onClick={prevMonth} className="p-2 hover:bg-muted rounded-full touch-target">

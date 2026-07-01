@@ -5,6 +5,7 @@ type Theme = 'light' | 'dark' | 'system';
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
   effectiveTheme: 'light' | 'dark';
 }
 
@@ -63,8 +64,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('theme', newTheme);
   };
 
+  const toggleTheme = () => {
+    const newTheme = effectiveTheme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, effectiveTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, effectiveTheme }}>
       {children}
     </ThemeContext.Provider>
   );

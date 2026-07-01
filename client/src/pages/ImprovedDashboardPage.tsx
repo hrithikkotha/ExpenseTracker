@@ -81,9 +81,9 @@ export default function ImprovedDashboardPage() {
   const pieColors = ['#ef4444', '#f59e0b', '#f97316', '#8b5cf6', '#3b82f6'];
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <div className="flex flex-col gap-4 p-4 md:p-6 border-b bg-background">
+      <div className="flex flex-col gap-4 p-4 md:p-6 border-b bg-background sticky top-0 z-30 backdrop-blur-sm bg-background/95">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Analytics</h1>
