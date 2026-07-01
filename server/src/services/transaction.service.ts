@@ -124,15 +124,6 @@ async function updateAccountBalance(
   ]);
 
   const calculatedBalance = result[0]?.balance ?? 0;
-
-  // Debug logging
-  console.log('=== Account Balance Calculation ===');
-  console.log('Account:', account.name, '(', account._id, ')');
-  console.log('Opening Balance:', account.openingBalance);
-  console.log('Calculated Balance from Transactions:', calculatedBalance);
-  console.log('New Current Balance:', account.openingBalance + calculatedBalance);
-  console.log('===================================');
-
   account.currentBalance = account.openingBalance + calculatedBalance;
   await account.save();
 }
@@ -221,12 +212,6 @@ export async function createTransaction(
     await assertCategoryUsable(userId, input.categoryId, input.type);
   }
   await assertAccountOwned(userId, input.accountId);
-
-  console.log('=== Creating Transaction ===');
-  console.log('Type:', input.type);
-  console.log('Amount:', input.amount);
-  console.log('Account ID:', input.accountId);
-  console.log('===========================');
 
   const txn = await Transaction.create({
     user: userId,
