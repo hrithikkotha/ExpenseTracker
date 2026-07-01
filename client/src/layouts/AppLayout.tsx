@@ -1,9 +1,11 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import Button from '../components/ui/Button';
 
 /**
- * Authenticated app shell: sidebar navigation + content outlet.
- * Route guarding, the topbar (search / theme / user menu), and the mobile
- * nav are wired up in later phases. Nav items are placeholders for now.
+ * Authenticated app shell: sidebar navigation + topbar + content outlet.
+ * The full topbar (search / theme toggle) and mobile nav land in later phases;
+ * for now it shows the signed-in user and a logout action.
  */
 const navItems = [
   { to: '/', label: 'Dashboard', end: true },
@@ -15,6 +17,14 @@ const navItems = [
 ];
 
 export default function AppLayout() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <div className="flex min-h-full">
       <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 sm:block">
@@ -42,9 +52,19 @@ export default function AppLayout() {
         </nav>
       </aside>
 
-      <main className="flex-1 p-6">
-        <Outlet />
-      </main>
+      <div className="flex flex-1 flex-col">
+        <header className="flex items-center justify-end gap-4 border-b border-gray-200 bg-white px-6 py-3 dark:border-gray-800 dark:bg-gray-900">
+          <span className="text-sm text-gray-600 dark:text-gray-300">
+            {user?.name}
+          </span>
+          <Button variant="secondary" onClick={handleLogout}>
+            Logout
+          </Button>
+        </header>
+        <main className="flex-1 p-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

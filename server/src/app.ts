@@ -1,5 +1,6 @@
 import express, { type Application } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import apiRouter from './routes';
 import { notFound } from './middleware/notFound';
@@ -21,6 +22,10 @@ export function createApp(): Application {
   );
   app.use(express.json({ limit: '10kb' }));
   app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+  app.use(cookieParser());
+
+  // Behind a proxy (Render) so req.ip / secure cookies work correctly.
+  app.set('trust proxy', 1);
 
   // API v1
   app.use('/api/v1', apiRouter);
