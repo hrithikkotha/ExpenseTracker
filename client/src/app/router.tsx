@@ -1,18 +1,22 @@
+import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../layouts/AppLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import ProtectedRoute from '../routes/ProtectedRoute';
 import PublicOnlyRoute from '../routes/PublicOnlyRoute';
-import DashboardPage from '../pages/DashboardPage';
-import TransactionsPage from '../pages/TransactionsPage';
-import CategoriesPage from '../pages/CategoriesPage';
-import BudgetsPage from '../pages/BudgetsPage';
-import { AccountsPage } from '../pages/AccountsPage';
-import ProfilePage from '../pages/ProfilePage';
-import SettingsPage from '../pages/SettingsPage';
-import LoginPage from '../pages/LoginPage';
-import RegisterPage from '../pages/RegisterPage';
-import NotFoundPage from '../pages/NotFoundPage';
+
+// Lazy load pages for code splitting
+const DashboardPage = lazy(() => import('../pages/DashboardPage'));
+const TransactionsPage = lazy(() => import('../pages/TransactionsPage'));
+const CategoriesPage = lazy(() => import('../pages/CategoriesPage'));
+const BudgetsPage = lazy(() => import('../pages/BudgetsPage'));
+const AccountsPage = lazy(() => import('../pages/AccountsPage').then(m => ({ default: m.AccountsPage })));
+const CalendarPage = lazy(() => import('../pages/CalendarPage').then(m => ({ default: m.CalendarPage })));
+const ProfilePage = lazy(() => import('../pages/ProfilePage'));
+const SettingsPage = lazy(() => import('../pages/SettingsPage'));
+const LoginPage = lazy(() => import('../pages/LoginPage'));
+const RegisterPage = lazy(() => import('../pages/RegisterPage'));
+const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 
 /**
  * Route tree. The app branch is gated by <ProtectedRoute>; auth pages sit
@@ -31,7 +35,7 @@ export const router = createBrowserRouter([
           { path: 'accounts', element: <AccountsPage /> },
           { path: 'categories', element: <CategoriesPage /> },
           { path: 'budgets', element: <BudgetsPage /> },
-          { path: 'calendar', element: <DashboardPage /> }, // TODO: CalendarPage
+          { path: 'calendar', element: <CalendarPage /> },
           { path: 'more', element: <SettingsPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'settings', element: <SettingsPage /> },
