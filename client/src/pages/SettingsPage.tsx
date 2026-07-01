@@ -15,11 +15,13 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { CURRENCIES, getCurrencySymbol } from '../lib/currencies';
+import { useUpdateCurrency } from '../features/users/hooks';
 
 export default function SettingsPage() {
   const { user, logout, setUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const updateCurrency = useUpdateCurrency();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
 
@@ -226,22 +228,12 @@ export default function SettingsPage() {
                   key={currency.code}
                   onClick={async () => {
                     try {
-                      // Update user currency
-                      const response = await fetch('/api/v1/users/me', {
-                        method: 'PATCH',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                        },
-                        body: JSON.stringify({ currency: currency.code }),
-                      });
-                      if (response.ok) {
-                        const data = await response.json();
-                        setUser(data.data);
-                        setShowCurrencyPicker(false);
-                      }
+                      const updatedUser = await updateCurrency.mutateAsync(currency.code);
+                      setUser(updatedUser);
+                      setShowCurrencyPicker(false);
                     } catch (error) {
                       console.error('Failed to update currency:', error);
+                      alert('Failed to update currency. Please try again.');
                     }
                   }}
                   className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors ${

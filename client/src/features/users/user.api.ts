@@ -7,6 +7,11 @@ export async function updateProfile(payload: UpdateProfilePayload): Promise<User
   return data.data;
 }
 
+export async function updateCurrency(currency: string): Promise<User> {
+  const { data } = await api.patch('/users/me', { currency });
+  return data.data;
+}
+
 export async function changePassword(payload: ChangePasswordPayload): Promise<void> {
   await api.post('/users/me/password', payload);
 }

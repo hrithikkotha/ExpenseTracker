@@ -24,7 +24,8 @@ export interface Transaction {
 export interface CreateTransactionPayload {
   type: CategoryType;
   amount: number;
-  categoryId: string;
+  accountId: string; // Required - which account the transaction is from/to
+  categoryId?: string; // Optional - categories feature removed
   note?: string;
   date: string; // ISO
 }

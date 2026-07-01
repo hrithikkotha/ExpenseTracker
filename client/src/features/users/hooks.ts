@@ -17,3 +17,13 @@ export function useChangePassword() {
     mutationFn: (payload: ChangePasswordPayload) => userApi.changePassword(payload),
   });
 }
+
+export function useUpdateCurrency() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (currency: string) => userApi.updateCurrency(currency),
+    onSuccess: (user) => {
+      qc.setQueryData(['auth', 'me'], user);
+    },
+  });
+}

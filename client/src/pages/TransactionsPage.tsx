@@ -122,7 +122,7 @@ export default function TransactionsPage() {
     <div className="mx-auto max-w-5xl">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold">Transactions</h1>
-        <Button onClick={openCreate}>+ Add transaction</Button>
+        {/* Removed "Add transaction" button - using bottom nav + button instead */}
       </div>
 
       <TransactionFilterBar

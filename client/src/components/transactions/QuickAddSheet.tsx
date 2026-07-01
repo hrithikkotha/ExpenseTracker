@@ -46,17 +46,21 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
 
   const onSubmit = async (data: QuickAddInput) => {
     try {
-      await createTransaction.mutateAsync({
+      const payload = {
         type: data.type,
         amount: data.amount,
         accountId: data.accountId,
-        note: data.note,
-        date: new Date(data.date),
-      });
+        note: data.note || undefined,
+        date: new Date(data.date).toISOString(),
+      };
+      console.log('Submitting transaction:', payload);
+      await createTransaction.mutateAsync(payload);
       onOpenChange(false);
       reset();
     } catch (error) {
       console.error('Failed to create transaction:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to create transaction: ${errorMessage}`);
     }
   };
 
