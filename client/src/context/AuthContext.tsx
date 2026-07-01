@@ -21,6 +21,7 @@ import {
 
 interface AuthContextValue {
   user: User | null;
+  setUser: (user: User) => void;
   isAuthenticated: boolean;
   isBootstrapping: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
+      setUser,
       isAuthenticated: !!user,
       isBootstrapping,
       login,

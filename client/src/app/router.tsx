@@ -7,6 +7,8 @@ import DashboardPage from '../pages/DashboardPage';
 import TransactionsPage from '../pages/TransactionsPage';
 import CategoriesPage from '../pages/CategoriesPage';
 import BudgetsPage from '../pages/BudgetsPage';
+import ProfilePage from '../pages/ProfilePage';
+import SettingsPage from '../pages/SettingsPage';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import NotFoundPage from '../pages/NotFoundPage';
@@ -26,6 +28,8 @@ export const router = createBrowserRouter([
           { path: 'transactions', element: <TransactionsPage /> },
           { path: 'categories', element: <CategoriesPage /> },
           { path: 'budgets', element: <BudgetsPage /> },
+          { path: 'profile', element: <ProfilePage /> },
+          { path: 'settings', element: <SettingsPage /> },
         ],
       },
     ],
