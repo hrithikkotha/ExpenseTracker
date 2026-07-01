@@ -33,7 +33,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
     try {
-      await login(data.email, data.password);
+      await login({ email: data.email, password: data.password });
       navigate('/', { replace: true });
     } catch (err) {
       setError(getErrorMessage(err) || 'Failed to log in. Please check your credentials.');
