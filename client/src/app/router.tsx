@@ -4,6 +4,7 @@ import AuthLayout from '../layouts/AuthLayout';
 import ProtectedRoute from '../routes/ProtectedRoute';
 import PublicOnlyRoute from '../routes/PublicOnlyRoute';
 import DashboardPage from '../pages/DashboardPage';
+import CategoriesPage from '../pages/CategoriesPage';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import NotFoundPage from '../pages/NotFoundPage';
@@ -19,7 +20,10 @@ export const router = createBrowserRouter([
     children: [
       {
         element: <AppLayout />,
-        children: [{ index: true, element: <DashboardPage /> }],
+        children: [
+          { index: true, element: <DashboardPage /> },
+          { path: 'categories', element: <CategoriesPage /> },
+        ],
       },
     ],
   },
