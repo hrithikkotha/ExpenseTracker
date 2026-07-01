@@ -1,12 +1,15 @@
 import { Schema, model, Types, type HydratedDocument } from 'mongoose';
 
-export type TransactionType = 'income' | 'expense';
+export type TransactionType = 'income' | 'expense' | 'transfer';
 
 export interface ITransaction {
   user: Types.ObjectId;
+  account: Types.ObjectId; // account where money came from/went to
   type: TransactionType;
   amount: number; // positive; stored with 2-decimal precision
-  category: Types.ObjectId;
+  category?: Types.ObjectId; // optional for transfers
+  toAccount?: Types.ObjectId; // destination account for transfers
+  transferPairId?: Types.ObjectId; // links paired transfer transactions
   note?: string;
   date: Date;
   createdAt: Date;
@@ -22,9 +25,14 @@ const transactionSchema = new Schema<ITransaction>(
       ref: 'User',
       required: true,
     },
+    account: {
+      type: Schema.Types.ObjectId,
+      ref: 'Account',
+      required: true,
+    },
     type: {
       type: String,
-      enum: ['income', 'expense'],
+      enum: ['income', 'expense', 'transfer'],
       required: true,
     },
     amount: {
@@ -37,7 +45,16 @@ const transactionSchema = new Schema<ITransaction>(
     category: {
       type: Schema.Types.ObjectId,
       ref: 'Category',
-      required: true,
+      required: function (this: ITransaction) {
+        return this.type !== 'transfer';
+      },
+    },
+    toAccount: {
+      type: Schema.Types.ObjectId,
+      ref: 'Account',
+    },
+    transferPairId: {
+      type: Schema.Types.ObjectId,
     },
     note: { type: String, trim: true, maxlength: 280 },
     date: { type: Date, required: true },
@@ -59,6 +76,10 @@ transactionSchema.index({ user: 1, date: -1 });
 transactionSchema.index({ user: 1, type: 1, date: -1 });
 // Category reports + "is this category in use?" checks.
 transactionSchema.index({ user: 1, category: 1 });
+// Account-specific transaction lists.
+transactionSchema.index({ user: 1, account: 1, date: -1 });
+// Transfer destination account lookups.
+transactionSchema.index({ user: 1, toAccount: 1, date: -1 });
 
 export const Transaction = model<ITransaction>(
   'Transaction',

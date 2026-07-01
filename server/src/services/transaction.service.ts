@@ -5,6 +5,7 @@ import {
   type TransactionDocument,
 } from '../models/Transaction';
 import { Category } from '../models/Category';
+import { Account } from '../models/Account';
 import { AppError } from '../utils/AppError';
 import type {
   CreateTransactionInput,
@@ -47,6 +48,64 @@ async function assertCategoryUsable(
   }
 }
 
+/**
+ * Ensures the account exists and belongs to the user.
+ */
+async function assertAccountOwned(
+  userId: string,
+  accountId: string,
+): Promise<void> {
+  const account = await Account.findOne({ _id: accountId, user: userId, isArchived: false });
+  if (!account) {
+    throw AppError.badRequest('Invalid account');
+  }
+}
+
+/**
+ * Updates account balance after transaction changes.
+ */
+async function updateAccountBalance(
+  userId: string,
+  accountId: string,
+): Promise<void> {
+  const account = await Account.findOne({ _id: accountId, user: userId });
+  if (!account) return;
+
+  // Recalculate balance from transactions
+  const result = await Transaction.aggregate([
+    {
+      $match: {
+        user: account.user,
+        $or: [{ account: account._id }, { toAccount: account._id }],
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        balance: {
+          $sum: {
+            $cond: [
+              { $eq: ['$account', account._id] },
+              {
+                $cond: [
+                  { $eq: ['$type', 'income'] },
+                  '$amount',
+                  { $cond: [{ $eq: ['$type', 'expense'] }, { $multiply: ['$amount', -1] }, { $multiply: ['$amount', -1] }] },
+                ],
+              },
+              '$amount', // toAccount (transfer in)
+            ],
+          },
+        },
+      },
+    },
+  ]);
+
+  const calculatedBalance = result[0]?.balance ?? 0;
+  account.currentBalance = account.openingBalance + calculatedBalance;
+  await account.save();
+}
+
 export async function listTransactions(
   userId: string,
   query: ListTransactionsQuery,
@@ -55,6 +114,9 @@ export async function listTransactions(
 
   if (query.type) filter.type = query.type;
   if (query.categoryId) filter.category = query.categoryId;
+  if (query.accountId) {
+    filter.$or = [{ account: query.accountId }, { toAccount: query.accountId }];
+  }
 
   if (query.from || query.to) {
     filter.date = {};
@@ -82,7 +144,9 @@ export async function listTransactions(
       .sort(sort)
       .skip(skip)
       .limit(query.limit)
-      .populate('category', 'name icon color type'),
+      .populate('category', 'name icon color type')
+      .populate('account', 'name icon color type')
+      .populate('toAccount', 'name icon color type'),
     Transaction.countDocuments(filter),
   ]);
 
@@ -112,6 +176,8 @@ export async function getTransaction(
 ): Promise<TransactionDocument> {
   const txn = await findOwnedOrThrow(userId, id);
   await txn.populate('category', 'name icon color type');
+  await txn.populate('account', 'name icon color type');
+  await txn.populate('toAccount', 'name icon color type');
   return txn;
 }
 
@@ -120,16 +186,23 @@ export async function createTransaction(
   input: CreateTransactionInput,
 ): Promise<TransactionDocument> {
   await assertCategoryUsable(userId, input.categoryId, input.type);
+  await assertAccountOwned(userId, input.accountId);
 
   const txn = await Transaction.create({
     user: userId,
+    account: input.accountId,
     type: input.type,
     amount: input.amount,
     category: input.categoryId,
     note: input.note,
     date: input.date,
   });
+
+  // Update account balance
+  await updateAccountBalance(userId, input.accountId);
+
   await txn.populate('category', 'name icon color type');
+  await txn.populate('account', 'name icon color type');
   return txn;
 }
 
@@ -140,22 +213,48 @@ export async function updateTransaction(
 ): Promise<TransactionDocument> {
   const txn = await findOwnedOrThrow(userId, id);
 
+  const oldAccountId = String(txn.account);
+
   // The effective type/category after the update must remain consistent.
   const nextType = input.type ?? txn.type;
   const nextCategory = input.categoryId ?? String(txn.category);
-  if (input.type !== undefined || input.categoryId !== undefined) {
-    await assertCategoryUsable(userId, nextCategory, nextType);
+  if ((input.type !== undefined || input.categoryId !== undefined) && nextType !== 'transfer') {
+    await assertCategoryUsable(userId, nextCategory, nextType as 'income' | 'expense');
   }
 
-  if (input.type !== undefined) txn.type = input.type;
+  if (input.accountId !== undefined) {
+    await assertAccountOwned(userId, input.accountId);
+  }
+
+  if (input.toAccountId !== undefined && input.toAccountId) {
+    await assertAccountOwned(userId, input.toAccountId);
+  }
+
+  if (input.type !== undefined) txn.type = input.type as TransactionDocument['type'];
   if (input.amount !== undefined) txn.amount = input.amount;
+  if (input.accountId !== undefined)
+    txn.account = input.accountId as unknown as TransactionDocument['account'];
   if (input.categoryId !== undefined)
     txn.category = nextCategory as unknown as TransactionDocument['category'];
+  if (input.toAccountId !== undefined)
+    txn.toAccount = input.toAccountId as unknown as TransactionDocument['toAccount'];
   if (input.note !== undefined) txn.note = input.note;
   if (input.date !== undefined) txn.date = input.date;
 
   await txn.save();
+
+  // Update balances for both old and new accounts
+  await updateAccountBalance(userId, oldAccountId);
+  if (input.accountId && input.accountId !== oldAccountId) {
+    await updateAccountBalance(userId, input.accountId);
+  }
+  if (input.toAccountId) {
+    await updateAccountBalance(userId, input.toAccountId);
+  }
+
   await txn.populate('category', 'name icon color type');
+  await txn.populate('account', 'name icon color type');
+  await txn.populate('toAccount', 'name icon color type');
   return txn;
 }
 
@@ -164,5 +263,14 @@ export async function deleteTransaction(
   id: string,
 ): Promise<void> {
   const txn = await findOwnedOrThrow(userId, id);
+  const accountId = String(txn.account);
+  const toAccountId = txn.toAccount ? String(txn.toAccount) : null;
+
   await txn.deleteOne();
+
+  // Recalculate account balances
+  await updateAccountBalance(userId, accountId);
+  if (toAccountId) {
+    await updateAccountBalance(userId, toAccountId);
+  }
 }

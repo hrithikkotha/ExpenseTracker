@@ -12,8 +12,9 @@ const SORT_FIELDS = ['date', 'amount', 'createdAt'] as const;
 
 export const listTransactionsSchema = z.object({
   query: z.object({
-    type: z.enum(['income', 'expense']).optional(),
+    type: z.enum(['income', 'expense', 'transfer']).optional(),
     categoryId: objectId.optional(),
+    accountId: objectId.optional(),
     from: z.coerce.date().optional(),
     to: z.coerce.date().optional(),
     q: z.string().trim().max(280).optional(),
@@ -38,6 +39,7 @@ export const createTransactionSchema = z.object({
   body: z.object({
     type: z.enum(['income', 'expense']),
     amount,
+    accountId: objectId,
     categoryId: objectId,
     note: z.string().trim().max(280).optional(),
     date: z.coerce.date({ invalid_type_error: 'Invalid date' }),
@@ -48,9 +50,11 @@ export const updateTransactionSchema = z.object({
   params: z.object({ id: objectId }),
   body: z
     .object({
-      type: z.enum(['income', 'expense']).optional(),
+      type: z.enum(['income', 'expense', 'transfer']).optional(),
       amount: amount.optional(),
+      accountId: objectId.optional(),
       categoryId: objectId.optional(),
+      toAccountId: objectId.optional(),
       note: z.string().trim().max(280).optional(),
       date: z.coerce.date().optional(),
     })
