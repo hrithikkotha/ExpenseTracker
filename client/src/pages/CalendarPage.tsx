@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { AppLayout } from '@/layouts/AppLayout';
 import { useCalendarMonth } from '@/features/calendar/hooks';
 import { formatCurrency } from '@/lib/utils';
 
@@ -40,23 +39,25 @@ export function CalendarPage() {
   }
 
   return (
-    <AppLayout
-      title="Calendar"
-      actions={
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-background">
+        <h1 className="text-xl font-bold">Calendar</h1>
         <div className="flex items-center gap-2">
-          <button onClick={prevMonth} className="p-2 hover:bg-muted rounded-full">
+          <button onClick={prevMonth} className="p-2 hover:bg-muted rounded-full touch-target">
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <span className="text-sm font-medium min-w-[100px] text-center">
+          <span className="text-sm font-medium min-w-[120px] text-center">
             {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </span>
-          <button onClick={nextMonth} className="p-2 hover:bg-muted rounded-full">
+          <button onClick={nextMonth} className="p-2 hover:bg-muted rounded-full touch-target">
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-      }
-    >
-      <div className="p-4">
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4">
         {isLoading ? (
           <div className="text-center py-12">Loading calendar...</div>
         ) : (
@@ -113,6 +114,6 @@ export function CalendarPage() {
           </div>
         )}
       </div>
-    </AppLayout>
+    </div>
   );
 }

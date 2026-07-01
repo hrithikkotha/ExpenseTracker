@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Plus, RefreshCw } from 'lucide-react';
-import { AppLayout } from '@/layouts/AppLayout';
 import { useAccounts, useSyncBalances } from '@/features/accounts/hooks';
 import { AccountCard } from '@/features/accounts/components/AccountCard';
 import { AccountFormModal } from '@/features/accounts/components/AccountFormModal';
@@ -27,10 +26,11 @@ export function AccountsPage() {
   };
 
   return (
-    <AppLayout
-      title="Accounts"
-      actions={
-        <>
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-background">
+        <h1 className="text-xl font-bold">Accounts</h1>
+        <div className="flex items-center gap-2">
           <button
             onClick={handleSync}
             disabled={syncBalances.isPending}
@@ -49,10 +49,11 @@ export function AccountsPage() {
           >
             <Plus className="w-5 h-5" />
           </button>
-        </>
-      }
-    >
-      <div className="p-4 space-y-4">
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
@@ -91,6 +92,6 @@ export function AccountsPage() {
         onOpenChange={handleCloseModal}
         account={selectedAccount}
       />
-    </AppLayout>
+    </div>
   );
 }
