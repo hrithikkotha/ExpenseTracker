@@ -23,7 +23,12 @@ export function useUpdateCurrency() {
   return useMutation({
     mutationFn: (currency: string) => userApi.updateCurrency(currency),
     onSuccess: (user) => {
+      // Update auth cache
       qc.setQueryData(['auth', 'me'], user);
+      // Invalidate all queries to refresh currency display everywhere
+      qc.invalidateQueries({ queryKey: ['transactions'] });
+      qc.invalidateQueries({ queryKey: ['accounts'] });
+      qc.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 }

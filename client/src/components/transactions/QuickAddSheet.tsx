@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+import { getCurrencySymbol } from '@/lib/currencies';
 import { useAccounts } from '@/features/accounts/hooks';
 import { useCreateTransaction } from '@/features/transactions/hooks';
 
@@ -24,6 +26,8 @@ interface QuickAddSheetProps {
 
 export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
   const [type, setType] = useState<'income' | 'expense'>('expense');
+  const { user } = useAuth();
+  const currencySymbol = getCurrencySymbol(user?.currency || 'INR');
   const { data: accounts = [] } = useAccounts();
   const createTransaction = useCreateTransaction();
 
@@ -128,7 +132,7 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
             <div>
               <label className="block text-sm font-medium mb-2 text-foreground">Amount *</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground">{currencySymbol}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -155,13 +159,13 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
                 <option value="" className="text-muted-foreground">Choose account...</option>
                 {activeAccounts.map((account) => (
                   <option key={account._id} value={account._id} className="text-foreground">
-                    {account.icon} {account.name} (${account.currentBalance.toFixed(2)})
+                    {account.icon} {account.name} ({currencySymbol}{account.currentBalance.toFixed(2)})
                   </option>
                 ))}
               </select>
               {selectedAccount && (
                 <div className="mt-2 text-sm text-muted-foreground">
-                  Current balance: ${selectedAccount.currentBalance.toFixed(2)}
+                  Current balance: {currencySymbol}{selectedAccount.currentBalance.toFixed(2)}
                 </div>
               )}
               {errors.accountId && (

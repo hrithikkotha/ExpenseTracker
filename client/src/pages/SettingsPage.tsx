@@ -210,48 +210,74 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Currency Picker Modal */}
+      {/* Currency Picker Modal - Mobile Bottom Sheet / Desktop Modal */}
       {showCurrencyPicker && (
         <>
+          {/* Backdrop */}
           <div
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowCurrencyPicker(false)}
           />
-          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md mx-4 bg-background border border-border rounded-xl shadow-2xl max-h-[70vh] flex flex-col">
-            <div className="p-4 border-b border-border">
-              <h3 className="text-lg font-semibold text-foreground">Select Currency</h3>
+
+          {/* Modal Container - Bottom sheet on mobile, centered on desktop */}
+          <div className="fixed left-0 right-0 bottom-0 md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-50 w-full md:max-w-md bg-background border-t md:border border-border rounded-t-3xl md:rounded-xl shadow-2xl max-h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="p-4 md:p-6 border-b border-border">
+              <h3 className="text-lg md:text-xl font-semibold text-foreground">Select Currency</h3>
               <p className="text-sm text-muted-foreground mt-1">Choose your preferred currency</p>
             </div>
-            <div className="flex-1 overflow-y-auto p-2">
-              {CURRENCIES.map((currency) => (
-                <button
-                  key={currency.code}
-                  onClick={async () => {
-                    try {
-                      const updatedUser = await updateCurrency.mutateAsync(currency.code);
-                      setUser(updatedUser);
-                      setShowCurrencyPicker(false);
-                    } catch (error) {
-                      console.error('Failed to update currency:', error);
-                      alert('Failed to update currency. Please try again.');
-                    }
-                  }}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors ${
-                    user?.currency === currency.code ? 'bg-primary/10 border border-primary' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{currency.symbol}</span>
-                    <div className="text-left">
-                      <p className="font-medium text-sm text-foreground">{currency.code}</p>
-                      <p className="text-xs text-muted-foreground">{currency.name}</p>
+
+            {/* Currency List - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-3 md:p-4">
+              <div className="space-y-2">
+                {CURRENCIES.map((currency) => (
+                  <button
+                    key={currency.code}
+                    onClick={async () => {
+                      try {
+                        const updatedUser = await updateCurrency.mutateAsync(currency.code);
+                        setUser(updatedUser);
+                        setShowCurrencyPicker(false);
+                        // Success feedback
+                        alert(`Currency updated to ${currency.code} (${currency.symbol})`);
+                      } catch (error) {
+                        console.error('Failed to update currency:', error);
+                        alert('Failed to update currency. Please try again.');
+                      }
+                    }}
+                    disabled={updateCurrency.isPending}
+                    className={`w-full flex items-center justify-between p-4 rounded-lg hover:bg-muted/80 transition-colors touch-target ${
+                      user?.currency === currency.code
+                        ? 'bg-primary/10 border-2 border-primary'
+                        : 'bg-card border border-border'
+                    } disabled:opacity-50`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl md:text-2xl w-10 text-center">{currency.symbol}</span>
+                      <div className="text-left">
+                        <p className="font-semibold text-base text-foreground">{currency.code}</p>
+                        <p className="text-xs text-muted-foreground">{currency.name}</p>
+                      </div>
                     </div>
-                  </div>
-                  {user?.currency === currency.code && (
-                    <div className="w-2 h-2 bg-primary rounded-full" />
-                  )}
-                </button>
-              ))}
+                    {user?.currency === currency.code && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-primary font-medium">Current</span>
+                        <div className="w-3 h-3 bg-primary rounded-full" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Close Button - Mobile */}
+            <div className="p-4 border-t border-border md:hidden">
+              <button
+                onClick={() => setShowCurrencyPicker(false)}
+                className="w-full py-3 bg-muted text-foreground rounded-lg font-medium hover:bg-muted/80 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </>
