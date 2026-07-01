@@ -95,13 +95,18 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
       />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 bg-background rounded-lg shadow-2xl max-h-[90vh] overflow-hidden">
+      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 bg-background rounded-lg shadow-2xl max-h-[90vh] overflow-hidden mx-4">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold">
-              {isEdit ? 'Edit Account' : 'Create Account'}
-            </h2>
+          <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b">
+            <div>
+              <h2 className="text-lg font-semibold">
+                {isEdit ? 'Edit Account' : 'Create Account'}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isEdit ? 'Update your account details' : 'Add a new account (Cash, Bank, Credit Card, etc.)'}
+              </p>
+            </div>
             <button
               onClick={() => onOpenChange(false)}
               className="touch-target rounded-full hover:bg-muted transition-colors"
@@ -111,7 +116,7 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {/* Name */}
               <div>
