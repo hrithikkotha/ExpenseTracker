@@ -63,10 +63,10 @@ function ImprovedDashboardPage() {
     isLoading: recentLoading,
   } = useTransactions({ sort: '-date', page: 1, limit: 10 });
 
-  // Fetch all transactions for the selected range for pie chart
+  // Fetch all transactions for pie chart (don't use date filters - get all transactions)
   const {
     data: allTransactionsData,
-  } = useTransactions({ ...summaryFilters, sort: '-date', page: 1, limit: 1000 });
+  } = useTransactions({ sort: '-date', page: 1, limit: 1000 });
 
   const recent = recentData?.items ?? [];
   const allTransactions = allTransactionsData?.items ?? [];
@@ -82,13 +82,22 @@ function ImprovedDashboardPage() {
       purposeMap.set(t.purpose, current + t.amount);
     });
 
-    return Array.from(purposeMap.entries())
+    const result = Array.from(purposeMap.entries())
       .map(([purpose, amount]) => ({ purpose, amount }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 8); // Top 8 expenses
+
+    console.log('All transactions:', allTransactions.length);
+    console.log('Expenses:', expenses.length);
+    console.log('Expense distribution:', result);
+
+    return result;
   }, [allTransactions]);
 
   const [selectedExpense, setSelectedExpense] = useState<{ purpose: string; amount: number } | null>(null);
+
+  console.log('Summary:', summary);
+  console.log('Expense distribution length:', expenseDistribution.length);
 
   // Top 5 expense categories
   const topCategories = useMemo(() => {
@@ -220,6 +229,14 @@ function ImprovedDashboardPage() {
             </div>
 
             {/* Expense Distribution by Purpose */}
+            {(() => {
+              console.log('Checking pie chart conditions:');
+              console.log('- summary exists:', !!summary);
+              console.log('- summary.totalExpense:', summary?.totalExpense);
+              console.log('- expenseDistribution.length:', expenseDistribution.length);
+              console.log('- Should show:', summary && summary.totalExpense > 0 && expenseDistribution.length > 0);
+              return null;
+            })()}
             {summary && summary.totalExpense > 0 && expenseDistribution.length > 0 ? (
               <div className="bg-card border rounded-xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
