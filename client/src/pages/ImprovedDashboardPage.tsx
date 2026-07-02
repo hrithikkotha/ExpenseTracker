@@ -63,8 +63,32 @@ function ImprovedDashboardPage() {
     isLoading: recentLoading,
   } = useTransactions({ sort: '-date', page: 1, limit: 10 });
 
+  // Fetch all transactions for the selected range for pie chart
+  const {
+    data: allTransactionsData,
+  } = useTransactions({ ...summaryFilters, sort: '-date', page: 1, limit: 1000 });
+
   const recent = recentData?.items ?? [];
+  const allTransactions = allTransactionsData?.items ?? [];
   const isLoading = summaryLoading || trendsLoading || recentLoading;
+
+  // Calculate expense distribution by purpose
+  const expenseDistribution = useMemo(() => {
+    const expenses = allTransactions.filter(t => t.type === 'expense');
+    const purposeMap = new Map<string, number>();
+
+    expenses.forEach(t => {
+      const current = purposeMap.get(t.purpose) || 0;
+      purposeMap.set(t.purpose, current + t.amount);
+    });
+
+    return Array.from(purposeMap.entries())
+      .map(([purpose, amount]) => ({ purpose, amount }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 8); // Top 8 expenses
+  }, [allTransactions]);
+
+  const [selectedExpense, setSelectedExpense] = useState<{ purpose: string; amount: number } | null>(null);
 
   // Top 5 expense categories
   const topCategories = useMemo(() => {
@@ -79,7 +103,7 @@ function ImprovedDashboardPage() {
     return summary.totalExpense / days;
   }, [summary, range]);
 
-  const pieColors = ['#ef4444', '#f59e0b', '#f97316', '#8b5cf6', '#3b82f6'];
+  const pieColors = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'];
 
   return (
     <div className="min-h-screen flex flex-col bg-background pb-20 md:pb-4">
@@ -195,50 +219,84 @@ function ImprovedDashboardPage() {
               </div>
             </div>
 
-            {/* Top Spending Categories */}
-            {topCategories.length > 0 && (
+            {/* Expense Distribution by Purpose */}
+            {expenseDistribution.length > 0 && (
               <div className="bg-card border rounded-xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <PieChartIcon className="w-5 h-5 text-primary" />
-                  <h2 className="text-lg font-semibold">Top Spending Categories</h2>
+                  <h2 className="text-lg font-semibold">Expense Distribution</h2>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Pie Chart */}
-                  <div className="h-64">
+                  <div className="h-64 md:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={topCategories}
-                          dataKey="total"
-                          nameKey="categoryName"
+                          data={expenseDistribution}
+                          dataKey="amount"
+                          nameKey="purpose"
                           cx="50%"
                           cy="50%"
-                          outerRadius={80}
+                          outerRadius="70%"
                           label
+                          onClick={(data: any) => {
+                            if (data && data.purpose && data.amount) {
+                              setSelectedExpense({ purpose: data.purpose, amount: data.amount });
+                            }
+                          }}
+                          style={{ cursor: 'pointer' }}
                         >
-                          {topCategories.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                          {expenseDistribution.map((_, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={pieColors[index % pieColors.length]}
+                              stroke={selectedExpense?.purpose === expenseDistribution[index].purpose ? '#000' : 'none'}
+                              strokeWidth={selectedExpense?.purpose === expenseDistribution[index].purpose ? 3 : 0}
+                            />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(v) => formatCurrency(Number(v), currency)} />
+                        <Tooltip
+                          formatter={(value: any) => formatCurrency(Number(value), currency)}
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
 
-                  {/* Category List */}
+                  {/* Purpose List */}
                   <div className="space-y-3">
-                    {topCategories.map((cat, idx) => {
-                      const percentage = (cat.total / summary.totalExpense) * 100;
+                    {selectedExpense && (
+                      <div className="mb-4 p-4 bg-primary/10 border-2 border-primary rounded-lg">
+                        <p className="text-xs text-muted-foreground mb-1">Selected Expense</p>
+                        <p className="font-bold text-lg text-foreground">{selectedExpense.purpose}</p>
+                        <p className="text-2xl font-bold text-red-600 mt-1">
+                          {formatCurrency(selectedExpense.amount, currency)}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {((selectedExpense.amount / summary.totalExpense) * 100).toFixed(1)}% of total expenses
+                        </p>
+                      </div>
+                    )}
+
+                    {expenseDistribution.map((item, idx) => {
+                      const percentage = (item.amount / summary.totalExpense) * 100;
                       return (
-                        <div key={cat.categoryId} className="space-y-1">
+                        <div
+                          key={idx}
+                          className={`space-y-1 p-2 rounded-lg cursor-pointer transition-colors ${
+                            selectedExpense?.purpose === item.purpose ? 'bg-primary/5 ring-2 ring-primary' : 'hover:bg-muted/50'
+                          }`}
+                          onClick={() => setSelectedExpense(item)}
+                        >
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xl">{cat.icon}</span>
-                              <span className="font-medium text-sm">{cat.categoryName}</span>
-                            </div>
+                            <span className="font-medium text-sm">{item.purpose}</span>
                             <span className="text-sm font-semibold">
-                              {formatCurrency(cat.total, currency)}
+                              {formatCurrency(item.amount, currency)}
                             </span>
                           </div>
                           <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
@@ -250,7 +308,7 @@ function ImprovedDashboardPage() {
                               }}
                             />
                           </div>
-                          <p className="text-xs text-muted-foreground">{percentage.toFixed(1)}% of total expenses</p>
+                          <p className="text-xs text-muted-foreground">{percentage.toFixed(1)}% of total</p>
                         </div>
                       );
                     })}
