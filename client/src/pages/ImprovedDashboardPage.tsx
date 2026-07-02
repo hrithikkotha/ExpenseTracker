@@ -220,7 +220,7 @@ function ImprovedDashboardPage() {
             </div>
 
             {/* Expense Distribution by Purpose */}
-            {expenseDistribution.length > 0 && (
+            {summary && summary.totalExpense > 0 && expenseDistribution.length > 0 ? (
               <div className="bg-card border rounded-xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <PieChartIcon className="w-5 h-5 text-primary" />
@@ -315,6 +315,14 @@ function ImprovedDashboardPage() {
                   </div>
                 </div>
               </div>
+            ) : (
+              summary && summary.totalExpense === 0 && (
+                <div className="bg-card border rounded-xl p-6 shadow-sm text-center">
+                  <PieChartIcon className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">No expense data available for the selected period</p>
+                  <p className="text-sm text-muted-foreground mt-1">Add some expense transactions to see the distribution</p>
+                </div>
+              )
             )}
 
             {/* Income vs Expense Trend */}
