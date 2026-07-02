@@ -4,9 +4,7 @@ import {
   LayoutDashboard,
   Receipt,
   Calendar,
-  PieChart,
   Wallet,
-  Target,
   Settings,
   LogOut,
 } from 'lucide-react';
@@ -20,8 +18,6 @@ const sidebarItems = [
   { path: '/transactions', icon: Receipt, label: 'Transactions' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
   { path: '/accounts', icon: Wallet, label: 'Accounts' },
-  { path: '/budgets', icon: Target, label: 'Budgets' },
-  { path: '/analytics', icon: PieChart, label: 'Analytics' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
