@@ -3,20 +3,11 @@ import { Transaction } from '../models/Transaction';
 import { Types } from 'mongoose';
 import type { SummaryQuery, TrendsQuery } from '../validators/analytics.validators';
 
-interface CategoryBreakdown {
-  categoryId: string;
-  categoryName: string;
-  icon: string;
-  color: string;
-  total: number;
-}
-
 export interface Summary {
   totalIncome: number;
   totalExpense: number;
   balance: number;
   savingsRate: number;
-  expenseByCategory: CategoryBreakdown[];
 }
 
 interface TrendPoint {
@@ -111,47 +102,11 @@ export async function getSummary(
   const balance = totalIncome - totalExpense;
   const savingsRate = totalIncome > 0 ? (balance / totalIncome) * 100 : 0;
 
-  // Expense breakdown by category
-  const categoryAgg = await Transaction.aggregate([
-    { $match: { ...match, type: 'expense' } },
-    {
-      $group: {
-        _id: '$category',
-        total: { $sum: '$amount' },
-      },
-    },
-    {
-      $lookup: {
-        from: 'categories',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'category',
-      },
-    },
-    {
-      $unwind: {
-        path: '$category',
-        preserveNullAndEmptyArrays: true, // Keep transactions without categories
-      },
-    },
-    {
-      $project: {
-        categoryId: '$_id',
-        categoryName: { $ifNull: ['$category.name', 'Uncategorized'] },
-        icon: { $ifNull: ['$category.icon', '📝'] },
-        color: { $ifNull: ['$category.color', '#6b7280'] },
-        total: 1,
-      },
-    },
-    { $sort: { total: -1 } },
-  ]);
-
   return {
     totalIncome,
     totalExpense,
     balance,
     savingsRate,
-    expenseByCategory: categoryAgg,
   };
 }
 

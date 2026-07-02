@@ -14,13 +14,12 @@ export async function exportToCSV(
   }
 
   const transactions = await Transaction.find(filter)
-    .populate('category', 'name')
     .populate('account', 'name')
     .populate('toAccount', 'name')
     .sort({ date: -1 });
 
   // CSV headers
-  const headers = ['Date', 'Type', 'Amount', 'Category', 'Account', 'To Account', 'Note'];
+  const headers = ['Date', 'Type', 'Amount', 'Purpose', 'Account', 'To Account', 'Note'];
   const rows = [headers];
 
   // CSV rows
@@ -29,7 +28,7 @@ export async function exportToCSV(
       txn.date.toISOString().split('T')[0],
       txn.type,
       txn.amount.toString(),
-      (txn.category as any)?.name || '',
+      txn.purpose || '',
       (txn.account as any)?.name || '',
       (txn.toAccount as any)?.name || '',
       txn.note || '',

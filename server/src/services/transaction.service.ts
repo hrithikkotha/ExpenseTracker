@@ -4,7 +4,6 @@ import {
   type ITransaction,
   type TransactionDocument,
 } from '../models/Transaction';
-import { Category } from '../models/Category';
 import { Account } from '../models/Account';
 import { AppError } from '../utils/AppError';
 import type {
@@ -25,28 +24,7 @@ function escapeRegex(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/**
- * Ensures the category exists, is usable by this user (owned or a system
- * default), and its type matches the transaction type. Returns nothing;
- * throws AppError otherwise.
- */
-async function assertCategoryUsable(
-  userId: string,
-  categoryId: string,
-  txnType: 'income' | 'expense',
-): Promise<void> {
-  const category = await Category.findById(categoryId);
-  const usable =
-    category && (category.isDefault || String(category.user) === userId);
-  if (!usable) {
-    throw AppError.badRequest('Invalid category');
-  }
-  if (category.type !== txnType) {
-    throw AppError.badRequest(
-      `Category "${category.name}" is an ${category.type} category, not ${txnType}`,
-    );
-  }
-}
+// Removed assertCategoryUsable - categories feature removed
 
 /**
  * Ensures the account exists and belongs to the user.
@@ -135,7 +113,6 @@ export async function listTransactions(
   const filter: FilterQuery<ITransaction> = { user: userId };
 
   if (query.type) filter.type = query.type;
-  if (query.categoryId) filter.category = query.categoryId;
   if (query.accountId) {
     filter.$or = [{ account: query.accountId }, { toAccount: query.accountId }];
   }
@@ -146,8 +123,12 @@ export async function listTransactions(
     if (query.to) filter.date.$lte = query.to;
   }
 
+  // Search in both purpose and note fields
   if (query.q) {
-    filter.note = { $regex: escapeRegex(query.q), $options: 'i' };
+    filter.$or = [
+      { purpose: { $regex: escapeRegex(query.q), $options: 'i' } },
+      { note: { $regex: escapeRegex(query.q), $options: 'i' } },
+    ];
   }
 
   // Parse "-field" / "field" into a Mongoose sort spec, with a stable
@@ -166,7 +147,6 @@ export async function listTransactions(
       .sort(sort)
       .skip(skip)
       .limit(query.limit)
-      .populate('category', 'name icon color type')
       .populate('account', 'name icon color type')
       .populate('toAccount', 'name icon color type'),
     Transaction.countDocuments(filter),
@@ -197,7 +177,6 @@ export async function getTransaction(
   id: string,
 ): Promise<TransactionDocument> {
   const txn = await findOwnedOrThrow(userId, id);
-  await txn.populate('category', 'name icon color type');
   await txn.populate('account', 'name icon color type');
   await txn.populate('toAccount', 'name icon color type');
   return txn;
@@ -207,10 +186,6 @@ export async function createTransaction(
   userId: string,
   input: CreateTransactionInput,
 ): Promise<TransactionDocument> {
-  // Only validate category if provided (categories are now optional)
-  if (input.categoryId) {
-    await assertCategoryUsable(userId, input.categoryId, input.type);
-  }
   await assertAccountOwned(userId, input.accountId);
 
   const txn = await Transaction.create({
@@ -218,7 +193,7 @@ export async function createTransaction(
     account: input.accountId,
     type: input.type,
     amount: input.amount,
-    category: input.categoryId || undefined, // Optional - categories feature removed
+    purpose: input.purpose,
     note: input.note,
     date: input.date,
   });
@@ -226,7 +201,6 @@ export async function createTransaction(
   // Update account balance
   await updateAccountBalance(userId, input.accountId);
 
-  await txn.populate('category', 'name icon color type');
   await txn.populate('account', 'name icon color type');
   return txn;
 }
@@ -240,13 +214,6 @@ export async function updateTransaction(
 
   const oldAccountId = String(txn.account);
 
-  // The effective type/category after the update must remain consistent.
-  const nextType = input.type ?? txn.type;
-  const nextCategory = input.categoryId ?? String(txn.category);
-  if ((input.type !== undefined || input.categoryId !== undefined) && nextType !== 'transfer') {
-    await assertCategoryUsable(userId, nextCategory, nextType as 'income' | 'expense');
-  }
-
   if (input.accountId !== undefined) {
     await assertAccountOwned(userId, input.accountId);
   }
@@ -259,11 +226,10 @@ export async function updateTransaction(
   if (input.amount !== undefined) txn.amount = input.amount;
   if (input.accountId !== undefined)
     txn.account = input.accountId as unknown as TransactionDocument['account'];
-  if (input.categoryId !== undefined)
-    txn.category = nextCategory as unknown as TransactionDocument['category'];
+  if (input.purpose !== undefined) txn.purpose = input.purpose;
+  if (input.note !== undefined) txn.note = input.note;
   if (input.toAccountId !== undefined)
     txn.toAccount = input.toAccountId as unknown as TransactionDocument['toAccount'];
-  if (input.note !== undefined) txn.note = input.note;
   if (input.date !== undefined) txn.date = input.date;
 
   await txn.save();
@@ -277,7 +243,6 @@ export async function updateTransaction(
     await updateAccountBalance(userId, input.toAccountId);
   }
 
-  await txn.populate('category', 'name icon color type');
   await txn.populate('account', 'name icon color type');
   await txn.populate('toAccount', 'name icon color type');
   return txn;

@@ -13,11 +13,10 @@ const SORT_FIELDS = ['date', 'amount', 'createdAt'] as const;
 export const listTransactionsSchema = z.object({
   query: z.object({
     type: z.enum(['income', 'expense', 'transfer']).optional(),
-    categoryId: objectId.optional(),
     accountId: objectId.optional(),
     from: z.coerce.date().optional(),
     to: z.coerce.date().optional(),
-    q: z.string().trim().max(280).optional(),
+    q: z.string().trim().max(280).optional(), // Searches purpose and note
     sort: z
       .string()
       .optional()
@@ -40,9 +39,9 @@ export const createTransactionSchema = z.object({
     type: z.enum(['income', 'expense']),
     amount,
     accountId: objectId,
-    categoryId: objectId.optional(), // Made optional - categories feature removed
-    tagIds: z.array(objectId).optional(),
+    purpose: z.string().trim().min(1, 'Purpose is required').max(100, 'Purpose must be 100 characters or less'),
     note: z.string().trim().max(280).optional(),
+    tagIds: z.array(objectId).optional(),
     date: z.coerce.date({ invalid_type_error: 'Invalid date' }),
   }),
 });
@@ -54,10 +53,10 @@ export const updateTransactionSchema = z.object({
       type: z.enum(['income', 'expense', 'transfer']).optional(),
       amount: amount.optional(),
       accountId: objectId.optional(),
-      categoryId: objectId.optional(),
+      purpose: z.string().trim().min(1).max(100).optional(),
+      note: z.string().trim().max(280).optional(),
       toAccountId: objectId.optional(),
       tagIds: z.array(objectId).optional(),
-      note: z.string().trim().max(280).optional(),
       date: z.coerce.date().optional(),
     })
     .refine((v) => Object.keys(v).length > 0, {
