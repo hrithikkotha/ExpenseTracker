@@ -172,7 +172,7 @@ export function ImprovedCalendarPage() {
           />
 
           {/* Sheet */}
-          <div className="fixed left-0 right-0 bottom-0 z-50 bg-background rounded-t-3xl shadow-2xl max-h-[75vh] flex flex-col">
+          <div className="fixed left-0 right-0 bottom-16 md:bottom-0 z-50 bg-background rounded-t-3xl shadow-2xl max-h-[calc(75vh-4rem)] md:max-h-[75vh] flex flex-col">
             {/* Sheet Header */}
             <div className="flex-shrink-0 flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-border">
               <div className="flex-1 min-w-0 mr-4">
