@@ -2,6 +2,8 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { MobileAppLayout } from './MobileAppLayout';
 import { DesktopAppLayout } from './DesktopAppLayout';
+import { NetworkStatusBanner, SyncErrorBanner } from '@/pwa/components/NetworkStatusBanner';
+import { InstallPrompt } from '@/pwa/components/InstallPrompt';
 
 interface AppLayoutProps {
   children?: ReactNode;
@@ -25,13 +27,25 @@ export function AppLayout({ children, title, actions }: AppLayoutProps) {
   // If used as a router layout, render Outlet; otherwise render children
   const content = children || <Outlet />;
 
-  if (isMobile) {
-    return (
-      <MobileAppLayout title={title} actions={actions}>
-        {content}
-      </MobileAppLayout>
-    );
-  }
+  return (
+    <>
+      {/* Network Status Banner (shown at top) */}
+      <NetworkStatusBanner />
 
-  return <DesktopAppLayout>{content}</DesktopAppLayout>;
+      {/* Sync Error Banner */}
+      <SyncErrorBanner />
+
+      {/* Main Layout */}
+      {isMobile ? (
+        <MobileAppLayout title={title} actions={actions}>
+          {content}
+        </MobileAppLayout>
+      ) : (
+        <DesktopAppLayout>{content}</DesktopAppLayout>
+      )}
+
+      {/* Install Prompt */}
+      <InstallPrompt />
+    </>
+  );
 }

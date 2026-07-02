@@ -2,12 +2,14 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X, Wallet } from 'lucide-react';
+import { X, Wallet, WifiOff, CloudOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrencySymbol } from '@/lib/currencies';
 import { useAccounts } from '@/features/accounts/hooks';
 import { useCreateTransaction, useTransactions } from '@/features/transactions/hooks';
+import { useNetworkStatus } from '@/pwa/hooks/useNetworkStatus';
+import { useOfflineTransactions } from '@/pwa/hooks/useOfflineTransactions';
 
 const quickAddSchema = z.object({
   type: z.enum(['income', 'expense']),
@@ -31,6 +33,8 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
   const currencySymbol = getCurrencySymbol(user?.currency || 'INR');
   const { data: accounts = [] } = useAccounts();
   const createTransaction = useCreateTransaction();
+  const { isOnline } = useNetworkStatus();
+  const { createOfflineTransaction } = useOfflineTransactions();
 
   const {
     register,
@@ -127,6 +131,16 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
         note: data.note || undefined,
         date: new Date(data.date).toISOString(),
       };
+
+      // If offline, save locally
+      if (!isOnline) {
+        await createOfflineTransaction(payload);
+        onOpenChange(false);
+        reset();
+        return;
+      }
+
+      // If online, save to server
       await createTransaction.mutateAsync(payload);
       onOpenChange(false);
       reset();
@@ -154,8 +168,18 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Add Transaction</h2>
-            <p className="text-xs text-muted-foreground">Record your income or expense</p>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-foreground">Add Transaction</h2>
+              {!isOnline && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-xs">
+                  <WifiOff className="w-3 h-3" />
+                  <span>Offline</span>
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isOnline ? 'Record your income or expense' : 'Will sync when online'}
+            </p>
           </div>
           <button
             onClick={() => onOpenChange(false)}
@@ -320,6 +344,18 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
                 placeholder="Additional details about this transaction..."
               />
             </div>
+
+            {/* Offline Notice */}
+            {!isOnline && (
+              <div className="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 px-4 py-3 rounded">
+                <div className="flex items-start gap-2">
+                  <CloudOff className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-orange-700 dark:text-orange-300">
+                    You're offline. This transaction will be saved locally and synced automatically when you're back online.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Submit Button */}
             <button
