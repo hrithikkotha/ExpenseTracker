@@ -63,10 +63,10 @@ function ImprovedDashboardPage() {
     isLoading: recentLoading,
   } = useTransactions({ sort: '-date', page: 1, limit: 10 });
 
-  // Fetch all transactions for pie chart (don't use date filters - get all transactions)
+  // Fetch all transactions for pie chart (max limit is 100 per backend validator)
   const {
     data: allTransactionsData,
-  } = useTransactions({ sort: '-date', page: 1, limit: 1000 });
+  } = useTransactions({ sort: '-date', page: 1, limit: 100 });
 
   const recent = recentData?.items ?? [];
   const allTransactions = allTransactionsData?.items ?? [];
