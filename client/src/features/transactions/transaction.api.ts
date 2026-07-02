@@ -1,7 +1,7 @@
 import { api } from '../../lib/axios';
 import type {
   CreateTransactionPayload,
-  PaginatedTransactions,
+  TransactionListResponse,
   Transaction,
   TransactionFilters,
   UpdateTransactionPayload,
@@ -9,7 +9,7 @@ import type {
 
 export async function listTransactions(
   filters: TransactionFilters = {},
-): Promise<PaginatedTransactions> {
+): Promise<TransactionListResponse> {
   // Drop empty/undefined params so the URL stays clean.
   const params = Object.fromEntries(
     Object.entries(filters).filter(

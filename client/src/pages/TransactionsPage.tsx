@@ -167,7 +167,7 @@ export default function TransactionsPage() {
                   sort={filters.sort ?? '-date'}
                   onSort={handleSort}
                 />
-                <th className="px-4 py-3 uppercase tracking-wide">Category</th>
+                <th className="px-4 py-3 uppercase tracking-wide">Purpose</th>
                 <th className="px-4 py-3 uppercase tracking-wide">Note</th>
                 <SortHeader
                   label="Amount"
@@ -180,7 +180,7 @@ export default function TransactionsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {transactions.map((t) => (
+              {transactions.map((t: Transaction) => (
                 <tr
                   key={t._id}
                   className="bg-white hover:bg-gray-50 dark:bg-gray-950 dark:hover:bg-gray-900"
@@ -188,14 +188,11 @@ export default function TransactionsPage() {
                   <td className="whitespace-nowrap px-4 py-3 text-gray-500 dark:text-gray-400">
                     {formatDate(t.date)}
                   </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center gap-2">
-                      <span aria-hidden>{t.category?.icon}</span>
-                      {t.category?.name ?? 'Uncategorized'}
-                    </span>
+                  <td className="px-4 py-3 font-medium">
+                    {t.purpose}
                   </td>
                   <td className="max-w-[16rem] truncate px-4 py-3 text-gray-500 dark:text-gray-400">
-                    {t.note}
+                    {t.note || '-'}
                   </td>
                   <td
                     className={[

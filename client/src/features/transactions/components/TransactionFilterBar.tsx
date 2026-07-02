@@ -1,4 +1,3 @@
-import CategorySelect from '../../categories/components/CategorySelect';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import type { CategoryType } from '../../categories/category.types';
@@ -24,18 +23,17 @@ export default function TransactionFilterBar({
 }: Props) {
   const hasActiveFilters =
     !!filters.type ||
-    !!filters.categoryId ||
     !!filters.from ||
     !!filters.to ||
     !!search;
 
   return (
-    <div className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 sm:grid-cols-2 lg:grid-cols-6">
+    <div className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 sm:grid-cols-2 lg:grid-cols-5">
       <div className="lg:col-span-2">
         <Input
-          label="Search note"
+          label="Search purpose or note"
           type="search"
-          placeholder="e.g. lunch"
+          placeholder="e.g. Groceries, Salary..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
         />
@@ -51,8 +49,6 @@ export default function TransactionFilterBar({
           onChange={(e) =>
             onPatch({
               type: (e.target.value || undefined) as CategoryType | undefined,
-              // Clear category when type changes — it may no longer apply.
-              categoryId: undefined,
             })
           }
         >
@@ -60,16 +56,6 @@ export default function TransactionFilterBar({
           <option value="expense">Expense</option>
           <option value="income">Income</option>
         </select>
-      </div>
-
-      <div>
-        <CategorySelect
-          label="Category"
-          placeholder="All categories"
-          categoryType={filters.type}
-          value={filters.categoryId ?? ''}
-          onChange={(e) => onPatch({ categoryId: e.target.value || undefined })}
-        />
       </div>
 
       <div>
@@ -91,7 +77,7 @@ export default function TransactionFilterBar({
       </div>
 
       {hasActiveFilters && (
-        <div className="flex items-end lg:col-span-6">
+        <div className="flex items-end lg:col-span-5">
           <Button variant="ghost" onClick={onReset}>
             Clear filters
           </Button>

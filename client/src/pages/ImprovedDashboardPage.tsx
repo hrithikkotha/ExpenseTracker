@@ -5,6 +5,7 @@ import { useSummary, useTrends } from '../features/analytics/hooks';
 import { useTransactions } from '../features/transactions/hooks';
 import { formatCurrency, formatDate } from '../lib/format';
 import { getErrorMessage } from '../lib/apiError';
+import type { Transaction } from '../features/transactions/transaction.types';
 import {
   AreaChart,
   Area,
@@ -347,22 +348,21 @@ function ImprovedDashboardPage() {
               <div className="bg-card border rounded-xl p-6 shadow-sm">
                 <h2 className="text-lg font-semibold mb-4">Recent Transactions</h2>
                 <div className="space-y-3">
-                  {recent.map((t) => (
+                  {recent.map((t: Transaction) => (
                     <div
                       key={t._id}
                       className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
-                          style={{ backgroundColor: `${t.category?.color ?? '#ccc'}22` }}
-                        >
-                          {t.category?.icon ?? '🏷️'}
-                        </div>
                         <div>
                           <p className="font-medium text-sm">
-                            {t.category?.name ?? 'Uncategorized'}
+                            {t.purpose}
                           </p>
+                          {t.note && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {t.note}
+                            </p>
+                          )}
                           <p className="text-xs text-muted-foreground">
                             {formatDate(t.date)}
                           </p>

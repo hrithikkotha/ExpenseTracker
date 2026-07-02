@@ -13,6 +13,7 @@ const quickAddSchema = z.object({
   type: z.enum(['income', 'expense']),
   amount: z.number().positive('Amount must be greater than 0'),
   accountId: z.string().min(1, 'Account is required'),
+  purpose: z.string().min(1, 'Purpose is required').max(100, 'Purpose must be 100 characters or less'),
   note: z.string().optional(),
   date: z.string(),
 });
@@ -55,6 +56,7 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
         type: data.type,
         amount: data.amount,
         accountId: data.accountId,
+        purpose: data.purpose,
         note: data.note || undefined,
         date: new Date(data.date).toISOString(),
       };
@@ -184,6 +186,21 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
               )}
             </div>
 
+            {/* Purpose - REQUIRED */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-foreground">Purpose *</label>
+              <input
+                type="text"
+                {...register('purpose')}
+                className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                placeholder="e.g., Groceries, Salary, Rent..."
+                maxLength={100}
+              />
+              {errors.purpose && (
+                <p className="mt-1 text-sm text-destructive">{errors.purpose.message}</p>
+              )}
+            </div>
+
             {/* Date */}
             <div>
               <label className="block text-sm font-medium mb-2 text-foreground">Date</label>
@@ -194,14 +211,14 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
               />
             </div>
 
-            {/* Note */}
+            {/* Note - Optional description */}
             <div>
               <label className="block text-sm font-medium mb-2 text-foreground">Note (Optional)</label>
               <textarea
                 {...register('note')}
                 rows={3}
                 className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none bg-background text-foreground"
-                placeholder="Add a note..."
+                placeholder="Additional details about this transaction..."
               />
             </div>
 

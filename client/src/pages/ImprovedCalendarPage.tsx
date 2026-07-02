@@ -5,6 +5,7 @@ import { useCalendarMonth } from '@/features/calendar/hooks';
 import { useTransactions } from '@/features/transactions/hooks';
 import { formatCurrency } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import type { Transaction } from '@/features/transactions/transaction.types';
 
 export function ImprovedCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -130,28 +131,26 @@ export function ImprovedCalendarPage() {
                       key={dayIdx}
                       onClick={() => handleDateClick(dateStr)}
                       className={cn(
-                        "aspect-square border-r last:border-r-0 p-2 hover:bg-muted/50 transition-colors text-left",
+                        "aspect-square border-r last:border-r-0 p-1.5 md:p-2 hover:bg-muted/50 transition-colors text-left flex flex-col",
                         isSelected && "bg-primary/10 ring-2 ring-primary ring-inset"
                       )}
                     >
-                      <div className={`text-sm font-semibold mb-1 ${isToday ? 'text-primary' : ''}`}>
+                      <div className={`text-xs md:text-sm font-semibold mb-0.5 ${isToday ? 'text-primary' : ''}`}>
                         {day}
                       </div>
-                      {dayData && (
-                        <div className="text-xs space-y-0.5">
+                      {dayData && dayData.count > 0 && (
+                        <div className="flex-1 flex flex-col justify-start text-[9px] md:text-[10px] space-y-0.5 overflow-hidden">
                           {dayData.income > 0 && (
-                            <div className="text-green-600 truncate text-[10px] font-medium">
+                            <div className="text-green-600 truncate font-medium leading-tight">
                               +{formatCurrency(dayData.income, currency)}
                             </div>
                           )}
                           {dayData.expense > 0 && (
-                            <div className="text-red-600 truncate text-[10px] font-medium">
+                            <div className="text-red-600 truncate font-medium leading-tight">
                               -{formatCurrency(dayData.expense, currency)}
                             </div>
                           )}
-                          {dayData.count > 0 && (
-                            <div className="text-muted-foreground text-[10px]">{dayData.count} txn</div>
-                          )}
+                          <div className="text-muted-foreground leading-tight">{dayData.count} txn</div>
                         </div>
                       )}
                     </button>
@@ -216,31 +215,23 @@ export function ImprovedCalendarPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {dayTransactions.map((t) => (
+                    {dayTransactions.map((t: Transaction) => (
                       <div
                         key={t._id}
                         className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                       >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
-                            style={{ backgroundColor: `${t.category?.color ?? '#ccc'}22` }}
-                          >
-                            {t.category?.icon ?? '🏷️'}
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {t.category?.name ?? 'Uncategorized'}
+                        <div className="flex-1 min-w-0 mr-4">
+                          <p className="font-semibold text-sm text-foreground">
+                            {t.purpose}
+                          </p>
+                          {t.note && (
+                            <p className="text-xs text-muted-foreground truncate mt-1">
+                              {t.note}
                             </p>
-                            {t.note && (
-                              <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                {t.note}
-                              </p>
-                            )}
-                          </div>
+                          )}
                         </div>
                         <p
-                          className={`text-sm font-semibold ${
+                          className={`text-sm font-bold whitespace-nowrap ${
                             t.type === 'income' ? 'text-green-600' : 'text-red-600'
                           }`}
                         >

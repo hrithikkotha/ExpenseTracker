@@ -1,12 +1,10 @@
-import type { CategoryType } from '../categories/category.types';
+export type CategoryType = 'income' | 'expense';
 
-/** Category as embedded in a populated transaction. */
 export interface PopulatedCategory {
   _id: string;
   name: string;
   icon: string;
   color: string;
-  type: CategoryType;
 }
 
 export interface Transaction {
@@ -14,8 +12,8 @@ export interface Transaction {
   user: string;
   type: CategoryType;
   amount: number;
-  category: PopulatedCategory;
-  note?: string;
+  purpose: string; // Main identifier for transaction
+  note?: string; // Optional description
   date: string;
   createdAt: string;
   updatedAt: string;
@@ -25,8 +23,8 @@ export interface CreateTransactionPayload {
   type: CategoryType;
   amount: number;
   accountId: string; // Required - which account the transaction is from/to
-  categoryId?: string; // Optional - categories feature removed
-  note?: string;
+  purpose: string; // REQUIRED - main identifier (e.g., "Groceries", "Salary")
+  note?: string; // Optional - additional description
   date: string; // ISO
 }
 
@@ -42,23 +40,21 @@ export type TransactionSort =
 
 export interface TransactionFilters {
   type?: CategoryType;
-  categoryId?: string;
-  from?: string; // ISO (yyyy-mm-dd)
-  to?: string;
-  q?: string;
+  accountId?: string;
+  from?: string; // ISO date
+  to?: string; // ISO date
+  q?: string; // Search query (searches purpose and note)
   sort?: TransactionSort;
   page?: number;
   limit?: number;
 }
 
-export interface PaginationMeta {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
-export interface PaginatedTransactions {
+export interface TransactionListResponse {
   items: Transaction[];
-  meta: PaginationMeta;
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }

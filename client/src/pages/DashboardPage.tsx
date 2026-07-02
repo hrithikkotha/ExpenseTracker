@@ -8,6 +8,7 @@ import { useSummary, useTrends } from '../features/analytics/hooks';
 import { useTransactions } from '../features/transactions/hooks';
 import { formatCurrency, formatDate } from '../lib/format';
 import { getErrorMessage } from '../lib/apiError';
+import type { Transaction } from '../features/transactions/transaction.types';
 
 type Range = 'month' | 'year' | 'all';
 
@@ -117,24 +118,21 @@ export default function DashboardPage() {
                 Recent Transactions
               </h2>
               <ul className="space-y-3">
-                {recent.map((t) => (
+                {recent.map((t: Transaction) => (
                   <li
                     key={t._id}
                     className="flex items-center justify-between border-b border-gray-100 pb-3 last:border-0 dark:border-gray-800"
                   >
                     <div className="flex items-center gap-3">
-                      <span
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-sm"
-                        style={{
-                          backgroundColor: `${t.category?.color ?? '#ccc'}22`,
-                        }}
-                      >
-                        {t.category?.icon ?? '🏷️'}
-                      </span>
                       <div>
                         <p className="text-sm font-medium">
-                          {t.category?.name ?? 'Uncategorized'}
+                          {t.purpose}
                         </p>
+                        {t.note && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {t.note}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {formatDate(t.date)}
                         </p>

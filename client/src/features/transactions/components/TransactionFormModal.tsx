@@ -1,14 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Modal from '../../../components/ui/Modal';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
-import CategorySelect from '../../categories/components/CategorySelect';
 import { getErrorMessage } from '../../../lib/apiError';
 import { toDateInputValue } from '../../../lib/format';
-import { useCreateTransaction, useUpdateTransaction } from '../hooks';
+import { useUpdateTransaction } from '../hooks';
 import type { Transaction } from '../transaction.types';
 
 const schema = z.object({
@@ -16,7 +15,7 @@ const schema = z.object({
   amount: z
     .number({ error: 'Enter an amount' })
     .positive('Amount must be greater than 0'),
-  categoryId: z.string().min(1, 'Select a category'),
+  purpose: z.string().min(1, 'Purpose is required').max(100),
   date: z.string().min(1, 'Pick a date'),
   note: z.string().max(280).optional(),
 });
@@ -34,15 +33,12 @@ export default function TransactionFormModal({
   transaction,
 }: Props) {
   const isEdit = !!transaction;
-  const create = useCreateTransaction();
   const update = useUpdateTransaction();
   const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
     reset,
     formState: { errors },
   } = useForm<FormValues>({
@@ -50,19 +46,11 @@ export default function TransactionFormModal({
     values: {
       type: transaction?.type ?? 'expense',
       amount: transaction?.amount ?? ('' as unknown as number),
-      categoryId: transaction?.category?._id ?? '',
+      purpose: transaction?.purpose ?? '',
       date: toDateInputValue(transaction?.date),
       note: transaction?.note ?? '',
     },
   });
-
-  const selectedType = watch('type');
-
-  // When the type changes, the previously chosen category no longer applies.
-  const [initialType] = useState(transaction?.type ?? 'expense');
-  useEffect(() => {
-    if (selectedType !== initialType) setValue('categoryId', '');
-  }, [selectedType, initialType, setValue]);
 
   const close = () => {
     setFormError(null);
@@ -72,22 +60,18 @@ export default function TransactionFormModal({
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
-    // Note: TransactionFormModal is legacy, QuickAddSheet is the main form now
-    // This modal doesn't have account selector, so we can't properly create transactions
-    // It's only used for editing existing transactions
+    // Note: TransactionFormModal is ONLY for editing existing transactions
+    // QuickAddSheet is used for creating new transactions
     const payload = {
       type: values.type,
       amount: values.amount,
-      accountId: '', // Legacy modal - account not available here
-      categoryId: values.categoryId,
+      purpose: values.purpose,
       date: new Date(values.date).toISOString(),
       note: values.note?.trim() || undefined,
     };
     try {
       if (isEdit) {
         await update.mutateAsync({ id: transaction._id, payload });
-      } else {
-        await create.mutateAsync(payload);
       }
       close();
     } catch (err) {
@@ -95,7 +79,7 @@ export default function TransactionFormModal({
     }
   });
 
-  const isSaving = create.isPending || update.isPending;
+  const isSaving = update.isPending;
 
   return (
     <Modal
@@ -132,11 +116,12 @@ export default function TransactionFormModal({
           {...register('amount', { valueAsNumber: true })}
         />
 
-        <CategorySelect
-          label="Category"
-          categoryType={selectedType}
-          error={errors.categoryId?.message}
-          {...register('categoryId')}
+        <Input
+          label="Purpose"
+          type="text"
+          placeholder="e.g., Groceries, Salary, Rent..."
+          error={errors.purpose?.message}
+          {...register('purpose')}
         />
 
         <Input
