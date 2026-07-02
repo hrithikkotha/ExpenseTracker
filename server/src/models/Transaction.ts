@@ -14,13 +14,13 @@ export interface ITransaction {
   account: Types.ObjectId; // account where money came from/went to
   type: TransactionType;
   amount: number; // positive; stored with 2-decimal precision
-  category?: Types.ObjectId; // optional for transfers & splits
+  purpose: string; // MANDATORY: main identifier for transaction (e.g., "Groceries", "Salary", "Rent")
+  note?: string; // optional description of what the transaction is
   toAccount?: Types.ObjectId; // destination account for transfers
   transferPairId?: Types.ObjectId; // links paired transfer transactions
   tags: Types.ObjectId[]; // array of tag references
   isSplit: boolean; // true if has splits
   splits: ITransactionSplit[]; // split breakdown
-  note?: string;
   date: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -52,10 +52,16 @@ const transactionSchema = new Schema<ITransaction>(
       // Guard against floating-point noise from the client.
       set: (v: number) => Math.round(v * 100) / 100,
     },
-    category: {
-      type: Schema.Types.ObjectId,
-      ref: 'Category',
-      required: false, // Made optional - categories feature removed
+    purpose: {
+      type: String,
+      required: [true, 'Purpose is required'],
+      trim: true,
+      maxlength: [100, 'Purpose must be 100 characters or less'],
+    },
+    note: {
+      type: String,
+      trim: true,
+      maxlength: [280, 'Note must be 280 characters or less'],
     },
     toAccount: {
       type: Schema.Types.ObjectId,
@@ -83,7 +89,6 @@ const transactionSchema = new Schema<ITransaction>(
       note: { type: String, trim: true, maxlength: 280 },
       percentage: { type: Number, min: 0, max: 100 },
     }],
-    note: { type: String, trim: true, maxlength: 280 },
     date: { type: Date, required: true },
   },
   {
