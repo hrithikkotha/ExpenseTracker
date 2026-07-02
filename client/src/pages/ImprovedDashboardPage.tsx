@@ -455,13 +455,7 @@ function ImprovedDashboardPage() {
                   <PieChartIcon className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">No Data Yet</h3>
-                <p className="text-muted-foreground mb-4">Start adding transactions to see your analytics</p>
-                <button
-                  onClick={() => window.location.href = '/transactions'}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  Add Transaction
-                </button>
+                <p className="text-muted-foreground">Start adding transactions to see your analytics</p>
               </div>
             )}
           </>
