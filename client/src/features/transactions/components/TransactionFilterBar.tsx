@@ -23,12 +23,10 @@ export default function TransactionFilterBar({
 }: Props) {
   const hasActiveFilters =
     !!filters.type ||
-    !!filters.from ||
-    !!filters.to ||
     !!search;
 
   return (
-    <div className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 sm:grid-cols-2 lg:grid-cols-3">
       <div className="lg:col-span-2">
         <Input
           label="Search purpose or note"
@@ -58,26 +56,8 @@ export default function TransactionFilterBar({
         </select>
       </div>
 
-      <div>
-        <Input
-          label="From"
-          type="date"
-          value={filters.from ?? ''}
-          onChange={(e) => onPatch({ from: e.target.value || undefined })}
-        />
-      </div>
-
-      <div>
-        <Input
-          label="To"
-          type="date"
-          value={filters.to ?? ''}
-          onChange={(e) => onPatch({ to: e.target.value || undefined })}
-        />
-      </div>
-
       {hasActiveFilters && (
-        <div className="flex items-end lg:col-span-5">
+        <div className="flex items-end lg:col-span-3">
           <Button variant="ghost" onClick={onReset}>
             Clear filters
           </Button>

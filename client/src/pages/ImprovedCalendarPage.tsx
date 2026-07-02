@@ -172,66 +172,66 @@ export function ImprovedCalendarPage() {
           />
 
           {/* Sheet */}
-          <div className="fixed left-0 right-0 bottom-0 z-50 bg-background rounded-t-3xl shadow-2xl max-h-[70vh] overflow-hidden">
-            <div className="flex flex-col h-full">
-              {/* Sheet Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b">
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    {new Date(selectedDate).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </h3>
-                  {selectedDayData && (
-                    <div className="flex items-center gap-4 mt-1 text-sm">
-                      <span className="text-green-600 font-medium">
-                        +{formatCurrency(selectedDayData.income, currency)}
-                      </span>
-                      <span className="text-red-600 font-medium">
-                        -{formatCurrency(selectedDayData.expense, currency)}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {selectedDayData.count} transactions
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={closeSheet}
-                  className="touch-target rounded-full hover:bg-muted transition-colors p-2"
-                  aria-label="Close"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Transaction List */}
-              <div className="flex-1 overflow-y-auto p-6">
-                {dayTransactions.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">No transactions on this day</p>
+          <div className="fixed left-0 right-0 bottom-0 z-50 bg-background rounded-t-3xl shadow-2xl max-h-[75vh] flex flex-col">
+            {/* Sheet Header */}
+            <div className="flex-shrink-0 flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-border">
+              <div className="flex-1 min-w-0 mr-4">
+                <h3 className="text-base md:text-lg font-semibold text-foreground truncate">
+                  {new Date(selectedDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </h3>
+                {selectedDayData && (
+                  <div className="flex items-center gap-3 md:gap-4 mt-1 text-xs md:text-sm flex-wrap">
+                    <span className="text-green-600 font-medium">
+                      +{formatCurrency(selectedDayData.income, currency)}
+                    </span>
+                    <span className="text-red-600 font-medium">
+                      -{formatCurrency(selectedDayData.expense, currency)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {selectedDayData.count} txn
+                    </span>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {dayTransactions.map((t: Transaction) => (
-                      <div
-                        key={t._id}
-                        className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                      >
-                        <div className="flex-1 min-w-0 mr-4">
-                          <p className="font-semibold text-sm text-foreground">
-                            {t.purpose}
+                )}
+              </div>
+              <button
+                onClick={closeSheet}
+                className="flex-shrink-0 rounded-full hover:bg-muted transition-colors p-2 -mr-2"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5 text-foreground" />
+              </button>
+            </div>
+
+            {/* Transaction List */}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 md:px-6 py-4">
+              {dayTransactions.length === 0 ? (
+                <div className="flex items-center justify-center py-12">
+                  <p className="text-muted-foreground text-sm">No transactions on this day</p>
+                </div>
+              ) : (
+                <div className="space-y-2 md:space-y-3 pb-6">
+                  {dayTransactions.map((t: Transaction) => (
+                    <div
+                      key={t._id}
+                      className="flex items-start justify-between gap-3 p-3 md:p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm md:text-base text-foreground break-words">
+                          {t.purpose}
+                        </p>
+                        {t.note && (
+                          <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1 break-words line-clamp-2">
+                            {t.note}
                           </p>
-                          {t.note && (
-                            <p className="text-xs text-muted-foreground truncate mt-1">
-                              {t.note}
-                            </p>
-                          )}
-                        </div>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0">
                         <p
-                          className={`text-sm font-bold whitespace-nowrap ${
+                          className={`text-sm md:text-base font-bold whitespace-nowrap ${
                             t.type === 'income' ? 'text-green-600' : 'text-red-600'
                           }`}
                         >
@@ -239,10 +239,10 @@ export function ImprovedCalendarPage() {
                           {formatCurrency(t.amount, currency)}
                         </p>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </>
