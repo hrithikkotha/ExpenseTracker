@@ -60,7 +60,11 @@ export default function TransactionFormModal({
   // Extract unique purposes from recent transactions
   const allPurposes = useMemo(() => {
     if (!recentTransactions?.items) return [];
-    const purposeSet = new Set(recentTransactions.items.map(t => t.purpose));
+    const purposeSet = new Set(
+      recentTransactions.items
+        .map(t => t.purpose)
+        .filter(p => p && typeof p === 'string' && p.trim().length > 0)
+    );
     return Array.from(purposeSet).sort();
   }, [recentTransactions]);
 
@@ -72,9 +76,11 @@ export default function TransactionFormModal({
 
   // Filter suggestions based on input
   const filteredSuggestions = useMemo(() => {
-    if (!purposeInput) return [];
-    const input = purposeInput.toLowerCase();
-    return allPurposes.filter(p => p.toLowerCase().includes(input)).slice(0, 5);
+    if (!purposeInput || !purposeInput.trim()) return [];
+    const input = purposeInput.toLowerCase().trim();
+    return allPurposes
+      .filter(p => p && p.toLowerCase().includes(input))
+      .slice(0, 5);
   }, [purposeInput, allPurposes]);
 
   // Handle purpose selection from suggestions
