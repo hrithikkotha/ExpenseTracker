@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrencySymbol } from '@/lib/currencies';
 import { useAccounts } from '@/features/accounts/hooks';
-import { useCreateTransaction } from '@/features/transactions/hooks';
+import { useCreateTransaction, useTransactions } from '@/features/transactions/hooks';
 
 const quickAddSchema = z.object({
   type: z.enum(['income', 'expense']),
@@ -49,6 +49,67 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
 
   const selectedAccountId = watch('accountId');
   const selectedAccount = accounts.find(a => a._id === selectedAccountId);
+
+  // Fetch recent transactions for purpose suggestions
+  const { data: recentTransactions } = useTransactions({ sort: '-date', page: 1, limit: 100 });
+
+  // Extract unique purposes from recent transactions
+  const allPurposes = useMemo(() => {
+    if (!recentTransactions?.items) return [];
+    const purposeSet = new Set(recentTransactions.items.map(t => t.purpose));
+    return Array.from(purposeSet).sort();
+  }, [recentTransactions]);
+
+  // Purpose autocomplete state
+  const [purposeInput, setPurposeInput] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const purposeInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter suggestions based on input
+  const filteredSuggestions = useMemo(() => {
+    if (!purposeInput) return [];
+    const input = purposeInput.toLowerCase();
+    return allPurposes.filter(p => p.toLowerCase().includes(input)).slice(0, 5);
+  }, [purposeInput, allPurposes]);
+
+  // Handle purpose selection from suggestions
+  const selectPurpose = (purpose: string) => {
+    setPurposeInput(purpose);
+    setValue('purpose', purpose);
+    setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+  };
+
+  // Handle keyboard navigation
+  const handlePurposeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || filteredSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev =>
+        prev < filteredSuggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+      e.preventDefault();
+      selectPurpose(filteredSuggestions[selectedSuggestionIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+    }
+  };
+
+  // Reset form and autocomplete when sheet closes
+  useEffect(() => {
+    if (!open) {
+      setPurposeInput('');
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+    }
+  }, [open]);
 
   const onSubmit = async (data: QuickAddInput) => {
     try {
@@ -186,16 +247,48 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
               )}
             </div>
 
-            {/* Purpose - REQUIRED */}
-            <div>
+            {/* Purpose - REQUIRED with Autocomplete */}
+            <div className="relative">
               <label className="block text-sm font-medium mb-2 text-foreground">Purpose *</label>
               <input
+                ref={purposeInputRef}
                 type="text"
-                {...register('purpose')}
+                value={purposeInput}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setPurposeInput(value);
+                  setValue('purpose', value);
+                  setShowSuggestions(value.length > 0);
+                  setSelectedSuggestionIndex(-1);
+                }}
+                onKeyDown={handlePurposeKeyDown}
+                onFocus={() => purposeInput.length > 0 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                 placeholder="e.g., Groceries, Salary, Rent..."
                 maxLength={100}
+                autoComplete="off"
               />
+
+              {/* Suggestions Dropdown */}
+              {showSuggestions && filteredSuggestions.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-background border-2 border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {filteredSuggestions.map((suggestion, index) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => selectPurpose(suggestion)}
+                      className={cn(
+                        "w-full text-left px-4 py-2 hover:bg-muted transition-colors",
+                        index === selectedSuggestionIndex && "bg-muted"
+                      )}
+                    >
+                      <span className="text-sm text-foreground">{suggestion}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {errors.purpose && (
                 <p className="mt-1 text-sm text-destructive">{errors.purpose.message}</p>
               )}
