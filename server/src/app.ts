@@ -67,8 +67,40 @@ export function createApp(): Application {
   const fs = require('fs');
 
   if (fs.existsSync(clientPath)) {
-    // Production monorepo: serve client build
-    app.use(express.static(clientPath));
+    // PWA: Special handling for service worker (must not be cached)
+    app.get('/sw.js', (_req, res) => {
+      res.setHeader('Service-Worker-Allowed', '/');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.sendFile(path.join(clientPath, 'sw.js'));
+    });
+
+    // PWA: Workbox runtime with no-cache
+    app.get('/workbox-*.js', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      const filename = _req.path.split('/').pop() || '';
+      res.sendFile(path.join(clientPath, filename));
+    });
+
+    // PWA: Manifest with proper content type
+    app.get('/manifest.webmanifest', (_req, res) => {
+      res.setHeader('Content-Type', 'application/manifest+json');
+      res.sendFile(path.join(clientPath, 'manifest.webmanifest'));
+    });
+
+    // PWA: registerSW.js with no-cache
+    app.get('/registerSW.js', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.sendFile(path.join(clientPath, 'registerSW.js'));
+    });
+
+    // Production monorepo: serve client build with caching for other assets
+    app.use(express.static(clientPath, {
+      maxAge: '1d', // Cache static assets for 1 day
+      etag: true,
+    }));
+
     // SPA fallback: serve index.html for all non-API routes
     app.get(/^(?!\/api).*/, (_req, res) => {
       res.sendFile(path.join(clientPath, 'index.html'));
