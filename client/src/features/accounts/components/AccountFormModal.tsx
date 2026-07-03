@@ -204,7 +204,7 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
                   <label className="block text-sm font-medium mb-2 text-foreground">Icon *</label>
                   <select
                     {...register('icon')}
-                    className="w-full px-4 py-3 text-2xl border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                    className="w-full px-2 py-2 text-2xl text-center border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                   >
                     {ICON_OPTIONS.map((icon) => (
                       <option key={icon} value={icon}>
