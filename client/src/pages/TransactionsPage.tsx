@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Pencil, Trash2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -204,16 +205,26 @@ export default function TransactionsPage() {
                     {formatCurrency(t.amount, currency)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <Button variant="ghost" onClick={() => openEdit(t)} className="text-xs px-2 py-1">
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs px-2 py-1"
-                      onClick={() => setToDelete(t)}
-                    >
-                      Delete
-                    </Button>
+                    <div className="flex items-center justify-end gap-2.5">
+                      <button
+                        onClick={() => openEdit(t)}
+                        className="group relative inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-500 dark:hover:to-blue-600 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
+                        aria-label="Edit transaction"
+                        title="Edit"
+                      >
+                        <Pencil className="w-4 h-4 text-white drop-shadow-sm" />
+                        <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </button>
+                      <button
+                        onClick={() => setToDelete(t)}
+                        className="group relative inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 dark:from-red-600 dark:to-red-700 dark:hover:from-red-500 dark:hover:to-red-600 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
+                        aria-label="Delete transaction"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4 text-white drop-shadow-sm" />
+                        <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
