@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
 import type { AccountType, Account } from '../types';
 import { useCreateAccount, useUpdateAccount } from '../hooks';
 
@@ -43,6 +44,12 @@ const DEFAULT_COLORS = [
   '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
 ];
 
+const ICON_OPTIONS = [
+  '💵', '🏦', '💳', '💰', '🪙', '💎', '🏠', '🚗',
+  '🎯', '📱', '💻', '🎮', '🍕', '☕', '✈️', '🎓',
+  '💼', '🏥', '🛒', '🎨', '📚', '⚡', '🔥', '💡',
+];
+
 export function AccountFormModal({ open, onOpenChange, account }: AccountFormModalProps) {
   const isEdit = !!account;
   const createAccount = useCreateAccount();
@@ -57,7 +64,7 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
     setValue,
   } = useForm({
     resolver: zodResolver(accountSchema),
-    defaultValues: account || {
+    defaultValues: {
       type: 'cash' as AccountType,
       icon: '💵',
       color: DEFAULT_COLORS[0],
@@ -68,7 +75,37 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
     },
   });
 
+  // Update form when account prop changes (for edit mode)
+  useEffect(() => {
+    if (account) {
+      reset({
+        name: account.name,
+        type: account.type,
+        icon: account.icon,
+        color: account.color,
+        currency: account.currency,
+        openingBalance: account.openingBalance,
+        includeInNetWorth: account.includeInNetWorth,
+        isDefault: account.isDefault,
+        notes: account.notes || '',
+      });
+    } else if (open) {
+      // Reset to defaults when opening for create
+      reset({
+        type: 'cash' as AccountType,
+        icon: '💵',
+        color: DEFAULT_COLORS[0],
+        currency: 'USD',
+        openingBalance: 0,
+        includeInNetWorth: true,
+        isDefault: false,
+        notes: '',
+      });
+    }
+  }, [account, open, reset]);
+
   const selectedColor = watch('color');
+  const selectedIcon = watch('icon');
 
   const onSubmit = async (data: AccountFormInput) => {
     try {
@@ -146,35 +183,44 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
                 </select>
               </div>
 
-              {/* Icon & Color Row - Compact */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Icon */}
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-foreground">Icon *</label>
-                  <input
-                    {...register('icon')}
-                    className="w-full px-4 py-3 text-3xl text-center border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
-                    placeholder="💵"
-                    maxLength={2}
-                  />
-                  {errors.icon && (
-                    <p className="mt-1 text-xs text-destructive">{errors.icon.message}</p>
-                  )}
+              {/* Icon Picker */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-foreground">Icon *</label>
+                <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg">
+                  {ICON_OPTIONS.map((icon) => (
+                    <button
+                      key={icon}
+                      type="button"
+                      onClick={() => setValue('icon', icon)}
+                      className={cn(
+                        'w-14 h-14 text-2xl flex items-center justify-center rounded-lg border-2 transition-all hover:scale-105 touch-target',
+                        selectedIcon === icon
+                          ? 'border-primary bg-primary/10 scale-105'
+                          : 'border-border bg-background hover:border-primary/50'
+                      )}
+                      aria-label={`Select icon ${icon}`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
                 </div>
+                {errors.icon && (
+                  <p className="mt-1 text-sm text-destructive">{errors.icon.message}</p>
+                )}
+              </div>
 
-                {/* Currency */}
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-foreground">Currency *</label>
-                  <input
-                    {...register('currency')}
-                    className="w-full px-4 py-3 text-base border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary uppercase bg-background text-foreground"
-                    placeholder="USD"
-                    maxLength={3}
-                  />
-                  {errors.currency && (
-                    <p className="mt-1 text-xs text-destructive">{errors.currency.message}</p>
-                  )}
-                </div>
+              {/* Currency */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-foreground">Currency *</label>
+                <input
+                  {...register('currency')}
+                  className="w-full px-4 py-3 text-base border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary uppercase bg-background text-foreground"
+                  placeholder="USD"
+                  maxLength={3}
+                />
+                {errors.currency && (
+                  <p className="mt-1 text-xs text-destructive">{errors.currency.message}</p>
+                )}
               </div>
 
               {/* Color */}
