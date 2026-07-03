@@ -45,9 +45,45 @@ const DEFAULT_COLORS = [
 ];
 
 const ICON_OPTIONS = [
-  '💵', '🏦', '💳', '💰', '🪙', '💎', '🏠', '🚗',
-  '🎯', '📱', '💻', '🎮', '🍕', '☕', '✈️', '🎓',
-  '💼', '🏥', '🛒', '🎨', '📚', '⚡', '🔥', '💡',
+  { value: '💵', label: '💵 Cash' },
+  { value: '🏦', label: '🏦 Bank' },
+  { value: '💳', label: '💳 Card' },
+  { value: '💰', label: '💰 Money Bag' },
+  { value: '🪙', label: '🪙 Coin' },
+  { value: '💎', label: '💎 Diamond' },
+  { value: '🏠', label: '🏠 Home' },
+  { value: '🚗', label: '🚗 Car' },
+  { value: '🎯', label: '🎯 Target' },
+  { value: '📱', label: '📱 Phone' },
+  { value: '💻', label: '💻 Laptop' },
+  { value: '🎮', label: '🎮 Gaming' },
+  { value: '🍕', label: '🍕 Food' },
+  { value: '☕', label: '☕ Coffee' },
+  { value: '✈️', label: '✈️ Travel' },
+  { value: '🎓', label: '🎓 Education' },
+  { value: '💼', label: '💼 Work' },
+  { value: '🏥', label: '🏥 Medical' },
+  { value: '🛒', label: '🛒 Shopping' },
+  { value: '🎨', label: '🎨 Creative' },
+  { value: '📚', label: '📚 Books' },
+  { value: '⚡', label: '⚡ Energy' },
+  { value: '🔥', label: '🔥 Hot' },
+  { value: '💡', label: '💡 Ideas' },
+];
+
+const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD - US Dollar' },
+  { value: 'EUR', label: 'EUR - Euro' },
+  { value: 'GBP', label: 'GBP - British Pound' },
+  { value: 'INR', label: 'INR - Indian Rupee' },
+  { value: 'JPY', label: 'JPY - Japanese Yen' },
+  { value: 'CNY', label: 'CNY - Chinese Yuan' },
+  { value: 'AUD', label: 'AUD - Australian Dollar' },
+  { value: 'CAD', label: 'CAD - Canadian Dollar' },
+  { value: 'CHF', label: 'CHF - Swiss Franc' },
+  { value: 'AED', label: 'AED - UAE Dirham' },
+  { value: 'SGD', label: 'SGD - Singapore Dollar' },
+  { value: 'HKD', label: 'HKD - Hong Kong Dollar' },
 ];
 
 export function AccountFormModal({ open, onOpenChange, account }: AccountFormModalProps) {
@@ -105,7 +141,6 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
   }, [account, open, reset]);
 
   const selectedColor = watch('color');
-  const selectedIcon = watch('icon');
 
   const onSubmit = async (data: AccountFormInput) => {
     try {
@@ -183,44 +218,43 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
                 </select>
               </div>
 
-              {/* Icon Picker */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-foreground">Icon *</label>
-                <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg">
-                  {ICON_OPTIONS.map((icon) => (
-                    <button
-                      key={icon}
-                      type="button"
-                      onClick={() => setValue('icon', icon)}
-                      className={cn(
-                        'w-14 h-14 text-2xl flex items-center justify-center rounded-lg border-2 transition-all hover:scale-105 touch-target',
-                        selectedIcon === icon
-                          ? 'border-primary bg-primary/10 scale-105'
-                          : 'border-border bg-background hover:border-primary/50'
-                      )}
-                      aria-label={`Select icon ${icon}`}
-                    >
-                      {icon}
-                    </button>
-                  ))}
+              {/* Icon & Currency Dropdowns */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Icon Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-foreground">Icon *</label>
+                  <select
+                    {...register('icon')}
+                    className="w-full px-4 py-3 text-base border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                  >
+                    {ICON_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.icon && (
+                    <p className="mt-1 text-xs text-destructive">{errors.icon.message}</p>
+                  )}
                 </div>
-                {errors.icon && (
-                  <p className="mt-1 text-sm text-destructive">{errors.icon.message}</p>
-                )}
-              </div>
 
-              {/* Currency */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-foreground">Currency *</label>
-                <input
-                  {...register('currency')}
-                  className="w-full px-4 py-3 text-base border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary uppercase bg-background text-foreground"
-                  placeholder="USD"
-                  maxLength={3}
-                />
-                {errors.currency && (
-                  <p className="mt-1 text-xs text-destructive">{errors.currency.message}</p>
-                )}
+                {/* Currency Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-foreground">Currency *</label>
+                  <select
+                    {...register('currency')}
+                    className="w-full px-4 py-3 text-base border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                  >
+                    {CURRENCY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.currency && (
+                    <p className="mt-1 text-xs text-destructive">{errors.currency.message}</p>
+                  )}
+                </div>
               </div>
 
               {/* Color */}
