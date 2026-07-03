@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Pencil, Trash2 } from 'lucide-react';
-import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Pagination from '../components/ui/Pagination';
