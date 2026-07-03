@@ -45,30 +45,9 @@ const DEFAULT_COLORS = [
 ];
 
 const ICON_OPTIONS = [
-  { value: '💵', label: '💵 Cash' },
-  { value: '🏦', label: '🏦 Bank' },
-  { value: '💳', label: '💳 Card' },
-  { value: '💰', label: '💰 Money Bag' },
-  { value: '🪙', label: '🪙 Coin' },
-  { value: '💎', label: '💎 Diamond' },
-  { value: '🏠', label: '🏠 Home' },
-  { value: '🚗', label: '🚗 Car' },
-  { value: '🎯', label: '🎯 Target' },
-  { value: '📱', label: '📱 Phone' },
-  { value: '💻', label: '💻 Laptop' },
-  { value: '🎮', label: '🎮 Gaming' },
-  { value: '🍕', label: '🍕 Food' },
-  { value: '☕', label: '☕ Coffee' },
-  { value: '✈️', label: '✈️ Travel' },
-  { value: '🎓', label: '🎓 Education' },
-  { value: '💼', label: '💼 Work' },
-  { value: '🏥', label: '🏥 Medical' },
-  { value: '🛒', label: '🛒 Shopping' },
-  { value: '🎨', label: '🎨 Creative' },
-  { value: '📚', label: '📚 Books' },
-  { value: '⚡', label: '⚡ Energy' },
-  { value: '🔥', label: '🔥 Hot' },
-  { value: '💡', label: '💡 Ideas' },
+  '💵', '🏦', '💳', '💰', '🪙', '💎', '🏠', '🚗',
+  '🎯', '📱', '💻', '🎮', '🍕', '☕', '✈️', '🎓',
+  '💼', '🏥', '🛒', '🎨', '📚', '⚡', '🔥', '💡',
 ];
 
 const CURRENCY_OPTIONS = [
@@ -225,11 +204,11 @@ export function AccountFormModal({ open, onOpenChange, account }: AccountFormMod
                   <label className="block text-sm font-medium mb-2 text-foreground">Icon *</label>
                   <select
                     {...register('icon')}
-                    className="w-full px-4 py-3 text-base border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                    className="w-full px-4 py-3 text-2xl border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                   >
-                    {ICON_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
+                    {ICON_OPTIONS.map((icon) => (
+                      <option key={icon} value={icon}>
+                        {icon}
                       </option>
                     ))}
                   </select>
