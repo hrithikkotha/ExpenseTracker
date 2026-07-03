@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -7,11 +7,13 @@ import {
   Wallet,
   Settings,
   LogOut,
+  Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { logout as logoutApi } from '@/features/auth/auth.api';
 import { clearAccessToken } from '@/lib/tokenStore';
 import { useNavigate } from 'react-router-dom';
+import { QuickAddSheet } from '@/components/transactions/QuickAddSheet';
 
 const sidebarItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -28,6 +30,7 @@ interface DesktopAppLayoutProps {
 export function DesktopAppLayout({ children }: DesktopAppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
 
   const handleLogout = async () => {
     await logoutApi();
@@ -72,6 +75,17 @@ export function DesktopAppLayout({ children }: DesktopAppLayoutProps) {
           </ul>
         </nav>
 
+        {/* Add Transaction Button */}
+        <div className="p-3 border-t">
+          <button
+            onClick={() => setIsQuickAddOpen(true)}
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors font-medium shadow-sm"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add Transaction</span>
+          </button>
+        </div>
+
         {/* Logout */}
         <div className="p-3 border-t">
           <button
@@ -83,6 +97,9 @@ export function DesktopAppLayout({ children }: DesktopAppLayoutProps) {
           </button>
         </div>
       </aside>
+
+      {/* Quick Add Sheet */}
+      <QuickAddSheet open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen} />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
