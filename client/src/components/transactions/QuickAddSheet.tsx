@@ -283,9 +283,12 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
                     <button
                       key={suggestion}
                       type="button"
-                      onClick={() => selectPurpose(suggestion)}
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // Prevent input from losing focus
+                        selectPurpose(suggestion);
+                      }}
                       className={cn(
-                        "w-full text-left px-4 py-2 hover:bg-muted transition-colors",
+                        "w-full text-left px-4 py-2 hover:bg-muted transition-colors cursor-pointer",
                         index === selectedSuggestionIndex && "bg-muted"
                       )}
                     >

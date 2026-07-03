@@ -216,9 +216,12 @@ export default function TransactionFormModal({
                 <button
                   key={suggestion}
                   type="button"
-                  onClick={() => selectPurpose(suggestion)}
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // Prevent input from losing focus
+                    selectPurpose(suggestion);
+                  }}
                   className={cn(
-                    "w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors",
+                    "w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer",
                     index === selectedSuggestionIndex && "bg-gray-50 dark:bg-gray-800"
                   )}
                 >
