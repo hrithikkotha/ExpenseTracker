@@ -9,6 +9,11 @@ export const exportCSV = catchAsync(async (req: Request, res: Response) => {
 
   const csv = await exportService.exportToCSV(req.user!.id, fromDate, toDate);
 
+  if (!csv) {
+    res.status(404).json({ message: 'No transactions found for the selected date range.' });
+    return;
+  }
+
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', 'attachment; filename=transactions.csv');
   res.status(200).send(csv);

@@ -33,15 +33,6 @@
   select option {
     @apply bg-background text-foreground;
   }
-
-  /* Date input calendar icon visibility */
-  input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(var(--tw-invert-icon, 0));
-  }
-
-  .dark input[type="date"]::-webkit-calendar-picker-indicator {
-    --tw-invert-icon: 1;
-  }
 }
 
 @layer base {
@@ -132,4 +123,21 @@
     min-width: 44px;
     min-height: 44px;
   }
+}
+
+/* Date input: override Tailwind preflight to restore native picker */
+input[type="date"] {
+  appearance: auto !important;
+  -webkit-appearance: auto !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 4px;
+  margin: 0;
+  opacity: 1;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
 }

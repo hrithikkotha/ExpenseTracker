@@ -92,7 +92,7 @@ export default function SettingsPage() {
           icon: HelpCircle,
           label: 'Help & FAQ',
           description: 'Get help and support',
-          onClick: () => alert('Help coming soon!'),
+          onClick: () => window.location.href = 'mailto:hrithikkotha@gmail.com?subject=Expense Tracker - Help & Support',
         },
         {
           icon: Shield,
@@ -204,8 +204,8 @@ export default function SettingsPage() {
           <p className="text-sm text-muted-foreground">
             Expense Tracker v1.0.0
           </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Made with ❤️ for better financial tracking
+          <p className="text-xs text-muted-foreground/60 mt-2">
+            Made by Hrithik Kotha
           </p>
         </div>
       </div>

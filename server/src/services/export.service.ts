@@ -1,10 +1,20 @@
 import { Transaction } from '../models/Transaction';
 
+function formatDate(date: any): string {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${month}/${day}/${year}`;
+}
+
 export async function exportToCSV(
   userId: string,
   from?: Date,
   to?: Date,
-): Promise<string> {
+): Promise<string | null> {
   const filter: Record<string, unknown> = { user: userId };
 
   if (from || to) {
@@ -18,25 +28,25 @@ export async function exportToCSV(
     .populate('toAccount', 'name')
     .sort({ date: -1 });
 
-  // CSV headers
-  const headers = ['Date', 'Type', 'Amount', 'Purpose', 'Account', 'To Account', 'Note'];
-  const rows = [headers];
+  if (transactions.length === 0) return null;
 
-  // CSV rows
+  const headers = ['Date', 'Type', 'Amount', 'Purpose', 'Account', 'To Account', 'Note'];
+
+  const lines: string[] = [headers.map(h => `"${h}"`).join(',')];
+
   for (const txn of transactions) {
-    rows.push([
-      txn.date.toISOString().split('T')[0],
-      txn.type,
+    const row = [
+      formatDate(txn.date),
+      `"${txn.type}"`,
       txn.amount.toString(),
-      txn.purpose || '',
-      (txn.account as any)?.name || '',
-      (txn.toAccount as any)?.name || '',
-      txn.note || '',
-    ]);
+      `"${(txn.purpose || '').replace(/"/g, '""')}"`,
+      `"${((txn.account as any)?.name || '').replace(/"/g, '""')}"`,
+      `"${((txn.toAccount as any)?.name || '').replace(/"/g, '""')}"`,
+      `"${(txn.note || '').replace(/"/g, '""')}"`,
+    ];
+    lines.push(row.join(','));
   }
 
-  // Convert to CSV string
-  return rows.map(row =>
-    row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-  ).join('\n');
+  // UTF-8 BOM for Excel to recognize encoding
+  return '\uFEFF' + lines.join('\n');
 }

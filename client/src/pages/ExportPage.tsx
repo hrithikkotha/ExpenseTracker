@@ -1,32 +1,32 @@
 import { useState } from 'react';
-import { Download, Calendar, FileText, CheckCircle } from 'lucide-react';
+import { Download, Calendar, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { api } from '../lib/axios';
+import { DatePicker } from '../components/ui/DatePicker';
 
 export default function ExportPage() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [noData, setNoData] = useState(false);
 
   const handleExport = async () => {
     setIsExporting(true);
     setExportSuccess(false);
+    setError(null);
+    setNoData(false);
 
     try {
-      // Build query params
       const params = new URLSearchParams();
       if (fromDate) params.append('from', fromDate);
       if (toDate) params.append('to', toDate);
-      params.append('format', 'csv');
 
-      const response = await fetch(`/api/v1/export/csv?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        },
+      const response = await api.get(`/export/csv?${params.toString()}`, {
+        responseType: 'blob',
       });
 
-      if (!response.ok) throw new Error('Export failed');
-
-      const blob = await response.blob();
+      const blob = new Blob([response.data], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -37,8 +37,23 @@ export default function ExportPage() {
       document.body.removeChild(a);
 
       setExportSuccess(true);
-    } catch (error) {
-      alert('Failed to export data. Please try again.');
+    } catch (err: any) {
+      console.error('Export error:', err);
+      if (err.response?.status === 404) {
+        setNoData(true);
+      } else {
+        let message = 'Failed to export data. Please try again.';
+        if (err.response?.data instanceof Blob) {
+          try {
+            const text = await err.response.data.text();
+            const json = JSON.parse(text);
+            message = json.message || message;
+          } catch {}
+        } else if (err.response?.data?.message) {
+          message = err.response.data.message;
+        }
+        setError(message);
+      }
     } finally {
       setIsExporting(false);
     }
@@ -47,7 +62,7 @@ export default function ExportPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <div className="p-4 border-b bg-background sticky top-0 z-30 backdrop-blur-sm bg-background/95">
+      <div className="p-4 border-b sticky top-0 z-30 backdrop-blur-sm bg-background/95">
         <h1 className="text-xl font-bold">Export Data</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Download your transaction history
@@ -76,32 +91,59 @@ export default function ExportPage() {
             Select Date Range
           </h2>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">From Date</label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">To Date</label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
-              />
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Leave empty to export all transactions
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <DatePicker
+              label="From Date"
+              value={fromDate}
+              onChange={setFromDate}
+              max={toDate || undefined}
+            />
+            <DatePicker
+              label="To Date"
+              value={toDate}
+              onChange={setToDate}
+              min={fromDate || undefined}
+            />
           </div>
+
+          <p className="text-xs text-muted-foreground">
+            Leave empty to export all transactions
+          </p>
         </div>
+
+        {/* No Transactions Message */}
+        {noData && (
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600" />
+              <div>
+                <h3 className="font-semibold text-sm text-amber-900 dark:text-amber-100">
+                  No Transactions Found
+                </h3>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  There are no transactions in the selected date range. Try adjusting your dates or leave them empty to export all.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+              <div>
+                <h3 className="font-semibold text-sm text-red-900 dark:text-red-100">
+                  Export Failed
+                </h3>
+                <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                  {error}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Success Message */}
         {exportSuccess && (
@@ -124,7 +166,7 @@ export default function ExportPage() {
         <button
           onClick={handleExport}
           disabled={isExporting}
-          className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
         >
           {isExporting ? (
             <>
@@ -149,7 +191,7 @@ export default function ExportPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">•</span>
-              <span>Category information</span>
+              <span>Purpose/category information</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">•</span>
