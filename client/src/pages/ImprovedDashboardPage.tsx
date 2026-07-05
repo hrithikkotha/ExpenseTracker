@@ -23,6 +23,8 @@ import {
 
 type Range = 'week' | 'month' | 'year';
 
+const RADIAN = Math.PI / 180;
+
 function ImprovedDashboardPage() {
   const { user } = useAuth();
   const currency = user?.currency ?? 'USD';
@@ -104,6 +106,42 @@ function ImprovedDashboardPage() {
   }, [summary, range]);
 
   const pieColors = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'];
+
+  // Only label slices big enough to have room; smaller slivers rely on the tooltip/list instead.
+  const renderPieLabel = (props: any) => {
+    const { cx, cy, midAngle, outerRadius, percent, value } = props;
+    if (percent < 0.05) return null;
+    const radius = outerRadius + 20;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="currentColor"
+        className="text-xs text-foreground"
+        textAnchor={x > cx ? 'start' : 'end'}
+        dominantBaseline="central"
+      >
+        {formatCurrency(value, currency)}
+      </text>
+    );
+  };
+
+  const renderPieLabelLine = (props: any) => {
+    const { points, percent } = props;
+    if (percent < 0.05 || !points?.length) return <></>;
+    const [start, end] = points;
+    return (
+      <path
+        d={`M${start.x},${start.y}L${end.x},${end.y}`}
+        stroke="currentColor"
+        strokeWidth={1}
+        fill="none"
+        className="text-muted-foreground"
+      />
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background pb-20 md:pb-4">
@@ -239,7 +277,8 @@ function ImprovedDashboardPage() {
                           cx="50%"
                           cy="50%"
                           outerRadius="70%"
-                          label
+                          label={renderPieLabel}
+                          labelLine={renderPieLabelLine}
                           onClick={(data: any) => {
                             if (data && data.purpose && data.amount) {
                               setSelectedExpense({ purpose: data.purpose, amount: data.amount });
