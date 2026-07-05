@@ -1,4 +1,5 @@
 import { User } from '../models/User';
+import { Transaction } from '../models/Transaction';
 import { AppError } from '../utils/AppError';
 
 interface UserListItem {
@@ -9,6 +10,8 @@ interface UserListItem {
   isActive: boolean;
   createdAt: Date;
   lastLoginAt?: Date;
+  transactionCount: number;
+  lastTransactionDate?: Date;
 }
 
 export async function listUsers(): Promise<UserListItem[]> {
@@ -16,15 +19,38 @@ export async function listUsers(): Promise<UserListItem[]> {
     .select('name email role isActive createdAt lastLoginAt')
     .sort({ createdAt: -1 });
 
-  return users.map((u) => ({
-    _id: u._id.toString(),
-    name: u.name,
-    email: u.email,
-    role: u.role,
-    isActive: u.isActive,
-    createdAt: u.createdAt,
-    lastLoginAt: u.lastLoginAt,
-  }));
+  const userIds = users.map((u) => u._id);
+
+  // Aggregate transaction stats per user (count + last date)
+  const stats = await Transaction.aggregate([
+    { $match: { user: { $in: userIds } } },
+    {
+      $group: {
+        _id: '$user',
+        count: { $sum: 1 },
+        lastDate: { $max: '$date' },
+      },
+    },
+  ]);
+
+  const statsMap = new Map(
+    stats.map((s) => [s._id.toString(), { count: s.count, lastDate: s.lastDate }]),
+  );
+
+  return users.map((u) => {
+    const s = statsMap.get(u._id.toString());
+    return {
+      _id: u._id.toString(),
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      isActive: u.isActive,
+      createdAt: u.createdAt,
+      lastLoginAt: u.lastLoginAt,
+      transactionCount: s?.count ?? 0,
+      lastTransactionDate: s?.lastDate,
+    };
+  });
 }
 
 export async function toggleUserStatus(
@@ -41,6 +67,12 @@ export async function toggleUserStatus(
   user.isActive = isActive;
   await user.save();
 
+  const stats = await Transaction.aggregate([
+    { $match: { user: user._id } },
+    { $group: { _id: null, count: { $sum: 1 }, lastDate: { $max: '$date' } } },
+  ]);
+  const s = stats[0];
+
   return {
     _id: user._id.toString(),
     name: user.name,
@@ -49,5 +81,7 @@ export async function toggleUserStatus(
     isActive: user.isActive,
     createdAt: user.createdAt,
     lastLoginAt: user.lastLoginAt,
+    transactionCount: s?.count ?? 0,
+    lastTransactionDate: s?.lastDate,
   };
 }

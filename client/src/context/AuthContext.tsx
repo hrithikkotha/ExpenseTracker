@@ -24,7 +24,7 @@ interface AuthContextValue {
   setUser: (user: User) => void;
   isAuthenticated: boolean;
   isBootstrapping: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<User>;
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -67,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { accessToken, user: loggedIn } = await authApi.login(credentials);
     setAccessToken(accessToken);
     setUser(loggedIn);
+    return loggedIn;
   }, []);
 
   const register = useCallback(async (credentials: RegisterCredentials) => {

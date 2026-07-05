@@ -2,6 +2,7 @@ export interface User {
   _id: string;
   name: string;
   email: string;
+  role: 'user' | 'admin';
   currency: string;
   theme: 'light' | 'dark' | 'system';
   isEmailVerified: boolean;

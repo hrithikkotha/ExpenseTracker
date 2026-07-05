@@ -2,8 +2,10 @@ import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../layouts/AppLayout';
 import AuthLayout from '../layouts/AuthLayout';
+import AdminLayout from '../layouts/AdminLayout';
 import ProtectedRoute from '../routes/ProtectedRoute';
 import PublicOnlyRoute from '../routes/PublicOnlyRoute';
+import AdminRoute from '../routes/AdminRoute';
 
 // Lazy load pages for code splitting
 const DashboardPage = lazy(() => import('../pages/ImprovedDashboardPage'));
@@ -16,6 +18,8 @@ const ExportPage = lazy(() => import('../pages/ExportPage'));
 const LoginPage = lazy(() => import('../pages/LoginPage'));
 const RegisterPage = lazy(() => import('../pages/RegisterPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
+const AdminLoginPage = lazy(() => import('../pages/AdminLoginPage'));
+const AdminDashboardPage = lazy(() => import('../pages/AdminDashboardPage'));
 
 /**
  * Route tree. The app branch is gated by <ProtectedRoute>; auth pages sit
@@ -50,6 +54,19 @@ export const router = createBrowserRouter([
         children: [
           { path: 'login', element: <LoginPage /> },
           { path: 'register', element: <RegisterPage /> },
+        ],
+      },
+    ],
+  },
+  { path: 'admin/login', element: <AdminLoginPage /> },
+  {
+    path: 'admin',
+    element: <AdminRoute />,
+    children: [
+      {
+        element: <AdminLayout />,
+        children: [
+          { index: true, element: <AdminDashboardPage /> },
         ],
       },
     ],
