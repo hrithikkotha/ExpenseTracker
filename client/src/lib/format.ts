@@ -11,6 +11,19 @@ export function formatCurrency(amount: number, currency = 'USD'): string {
   }
 }
 
+/** Resolves the currency symbol (e.g. ₹, $) for the given ISO currency code. */
+export function getCurrencySymbol(currency = 'USD'): string {
+  try {
+    const parts = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+    }).formatToParts(0);
+    return parts.find((part) => part.type === 'currency')?.value ?? currency;
+  } catch {
+    return currency;
+  }
+}
+
 /** Formats an ISO date string as a short, locale-aware date. */
 export function formatDate(iso: string): string {
   const d = new Date(iso);

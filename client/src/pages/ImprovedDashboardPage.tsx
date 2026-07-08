@@ -3,7 +3,7 @@ import { TrendingUp, TrendingDown, DollarSign, PieChart as PieChartIcon, Calenda
 import { useAuth } from '../context/AuthContext';
 import { useSummary, useTrends } from '../features/analytics/hooks';
 import { useTransactions } from '../features/transactions/hooks';
-import { formatCurrency, formatDate } from '../lib/format';
+import { formatCurrency, formatDate, getCurrencySymbol } from '../lib/format';
 import { getErrorMessage } from '../lib/apiError';
 import type { Transaction } from '../features/transactions/transaction.types';
 import {
@@ -21,7 +21,7 @@ import {
   Tooltip,
 } from 'recharts';
 
-type Range = 'week' | 'month' | 'year';
+type Range = 'week' | 'month' | 'year' | 'all';
 
 const RADIAN = Math.PI / 180;
 
@@ -42,10 +42,12 @@ function ImprovedDashboardPage() {
       const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       return { from: start.toISOString(), to: end.toISOString() };
     }
-    // year
-    const start = new Date(now.getFullYear(), 0, 1);
-    const end = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
-    return { from: start.toISOString(), to: end.toISOString() };
+    if (range === 'year') {
+      const start = new Date(now.getFullYear(), 0, 1);
+      const end = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+      return { from: start.toISOString(), to: end.toISOString() };
+    }
+    return {};
   }, [range]);
 
   const {
@@ -101,15 +103,31 @@ function ImprovedDashboardPage() {
   // Calculate spending patterns (daily average)
   const dailyAverage = useMemo(() => {
     if (!summary) return 0;
-    const days = range === 'week' ? 7 : range === 'month' ? 30 : 365;
+    let days = 30;
+    if (range === 'week') {
+      days = 7;
+    } else if (range === 'month') {
+      days = 30;
+    } else if (range === 'year') {
+      days = 365;
+    } else if (range === 'all') {
+      if (allTransactions.length > 0) {
+        const oldestDate = new Date(allTransactions[allTransactions.length - 1].date);
+        const diffTime = Math.abs(new Date().getTime() - oldestDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        days = diffDays > 0 ? diffDays : 1;
+      } else {
+        days = 1;
+      }
+    }
     return summary.totalExpense / days;
-  }, [summary, range]);
+  }, [summary, range, allTransactions]);
 
   const pieColors = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'];
 
   // Only label slices big enough to have room; smaller slivers rely on the tooltip/list instead.
   const renderPieLabel = (props: any) => {
-    const { cx, cy, midAngle, outerRadius, percent, value } = props;
+    const { cx, cy, midAngle, outerRadius, percent, name, payload } = props;
     if (percent < 0.05) return null;
     const radius = outerRadius + 20;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -123,7 +141,7 @@ function ImprovedDashboardPage() {
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
       >
-        {formatCurrency(value, currency)}
+        {name || payload?.purpose}
       </text>
     );
   };
@@ -156,7 +174,7 @@ function ImprovedDashboardPage() {
 
         {/* Range Selector */}
         <div className="flex gap-2">
-          {(['week', 'month', 'year'] as const).map((r) => (
+          {(['week', 'month', 'year', 'all'] as const).map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
@@ -167,7 +185,13 @@ function ImprovedDashboardPage() {
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'}
               `}
             >
-              {r === 'week' ? 'Last 7 Days' : r === 'month' ? 'This Month' : 'This Year'}
+              {r === 'week'
+                ? 'Last 7 Days'
+                : r === 'month'
+                ? 'This Month'
+                : r === 'year'
+                ? 'This Year'
+                : 'All Time'}
             </button>
           ))}
         </div>
@@ -175,7 +199,7 @@ function ImprovedDashboardPage() {
 
       {/* Mobile Range Selector */}
       <div className="md:hidden flex gap-2 p-4 bg-background border-b overflow-x-auto">
-        {(['week', 'month', 'year'] as const).map((r) => (
+        {(['week', 'month', 'year', 'all'] as const).map((r) => (
           <button
             key={r}
             onClick={() => setRange(r)}
@@ -186,7 +210,7 @@ function ImprovedDashboardPage() {
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'}
             `}
           >
-            {r === 'week' ? 'Week' : r === 'month' ? 'Month' : 'Year'}
+            {r === 'week' ? 'Week' : r === 'month' ? 'Month' : r === 'year' ? 'Year' : 'All Time'}
           </button>
         ))}
       </div>
@@ -393,7 +417,7 @@ function ImprovedDashboardPage() {
                       />
                       <YAxis
                         className="text-xs"
-                        tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                        tickFormatter={(v) => `${getCurrencySymbol(currency)}${(v / 1000).toFixed(0)}k`}
                       />
                       <Tooltip
                         contentStyle={{
@@ -432,7 +456,7 @@ function ImprovedDashboardPage() {
                     <BarChart data={topCategories}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="categoryName" className="text-xs" />
-                      <YAxis className="text-xs" tickFormatter={(v) => `$${v}`} />
+                      <YAxis className="text-xs" tickFormatter={(v) => `${getCurrencySymbol(currency)}${v}`} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',

@@ -150,7 +150,7 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
       />
 
       {/* Sheet */}
-      <div className="fixed left-0 right-0 bottom-0 z-50 bg-background rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col">
+      <div className="fixed left-0 right-0 bottom-0 md:top-1/2 md:bottom-auto md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:right-auto z-50 bg-background rounded-t-3xl md:rounded-2xl shadow-2xl max-h-[85vh] md:max-h-[90vh] md:max-w-md md:w-full flex flex-col md:border border-border">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
