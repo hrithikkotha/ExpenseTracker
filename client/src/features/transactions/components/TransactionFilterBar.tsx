@@ -1,6 +1,6 @@
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
-import type { CategoryType } from '../../categories/category.types';
+import type { CategoryType } from '../transaction.types';
 import type { TransactionFilters } from '../transaction.types';
 
 interface Props {

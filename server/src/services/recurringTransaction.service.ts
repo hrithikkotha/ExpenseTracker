@@ -5,7 +5,6 @@ import {
 } from '../models/RecurringTransaction';
 import { Transaction } from '../models/Transaction';
 import { Account } from '../models/Account';
-import { Category } from '../models/Category';
 import { AppError } from '../utils/AppError';
 import type { CreateRecurringTransactionInput, UpdateRecurringTransactionInput } from '../validators/recurringTransaction.validators';
 
@@ -44,7 +43,6 @@ export async function listRecurringTransactions(
   }
 
   return RecurringTransaction.find(filter)
-    .populate('category', 'name icon color type')
     .populate('account', 'name icon color')
     .sort({ nextOccurrence: 1 });
 }
@@ -54,7 +52,6 @@ export async function getRecurringTransaction(
   id: string,
 ): Promise<RecurringTransactionDocument> {
   const recurring = await RecurringTransaction.findOne({ _id: id, user: userId })
-    .populate('category', 'name icon color type')
     .populate('account', 'name icon color');
 
   if (!recurring) throw AppError.notFound('Recurring transaction not found');
@@ -69,14 +66,7 @@ export async function createRecurringTransaction(
   const account = await Account.findOne({ _id: input.accountId, user: userId });
   if (!account) throw AppError.badRequest('Invalid account');
 
-  // Validate category exists and type matches
-  const category = await Category.findById(input.categoryId);
-  if (!category || (!category.isDefault && String(category.user) !== userId)) {
-    throw AppError.badRequest('Invalid category');
-  }
-  if (category.type !== input.type) {
-    throw AppError.badRequest(`Category "${category.name}" is for ${category.type}, not ${input.type}`);
-  }
+
 
   const startDate = new Date(input.startDate);
   const nextOccurrence = calculateNextOccurrence(startDate, input.frequency);
@@ -86,7 +76,6 @@ export async function createRecurringTransaction(
     account: input.accountId,
     type: input.type,
     amount: input.amount,
-    category: input.categoryId,
     note: input.note,
     frequency: input.frequency,
     startDate,
@@ -95,7 +84,6 @@ export async function createRecurringTransaction(
     isActive: true,
   });
 
-  await recurring.populate('category', 'name icon color type');
   await recurring.populate('account', 'name icon color');
   return recurring;
 }
@@ -114,18 +102,8 @@ export async function updateRecurringTransaction(
     recurring.account = input.accountId as any;
   }
 
-  if (input.categoryId || input.type) {
-    const nextType = input.type ?? recurring.type;
-    const nextCategory = input.categoryId ?? String(recurring.category);
-    const category = await Category.findById(nextCategory);
-    if (!category || (!category.isDefault && String(category.user) !== userId)) {
-      throw AppError.badRequest('Invalid category');
-    }
-    if (category.type !== nextType) {
-      throw AppError.badRequest(`Category mismatch`);
-    }
-    if (input.categoryId) recurring.category = input.categoryId as any;
-    if (input.type) recurring.type = input.type;
+  if (input.type) {
+    recurring.type = input.type;
   }
 
   if (input.amount !== undefined) recurring.amount = input.amount;
@@ -143,7 +121,6 @@ export async function updateRecurringTransaction(
   }
 
   await recurring.save();
-  await recurring.populate('category', 'name icon color type');
   await recurring.populate('account', 'name icon color');
   return recurring;
 }
@@ -166,7 +143,6 @@ export async function skipNextOccurrence(
 
   recurring.nextOccurrence = calculateNextOccurrence(recurring.nextOccurrence, recurring.frequency);
   await recurring.save();
-  await recurring.populate('category', 'name icon color type');
   await recurring.populate('account', 'name icon color');
   return recurring;
 }
@@ -200,7 +176,6 @@ export async function processRecurringTransactions(): Promise<number> {
         account: recurring.account,
         type: recurring.type,
         amount: recurring.amount,
-        category: recurring.category,
         note: recurring.note,
         date: recurring.nextOccurrence,
       });

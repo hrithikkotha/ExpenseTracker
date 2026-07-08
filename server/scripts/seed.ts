@@ -1,32 +1,13 @@
 /**
- * Seeds system defaults: categories + optional admin user. Safe to run repeatedly.
+ * Seeds system defaults: optional admin user. Safe to run repeatedly.
  * Usage: npm run seed
  */
 import { connectDB, disconnectDB } from '../src/config/db';
-import { Category } from '../src/models/Category';
 import { User } from '../src/models/User';
 import { env } from '../src/config/env';
-import { DEFAULT_CATEGORIES } from '../src/config/defaultCategories';
 
 async function seed() {
   await connectDB();
-
-  let categoriesCreated = 0;
-  for (const cat of DEFAULT_CATEGORIES) {
-    const res = await Category.updateOne(
-      { user: null, type: cat.type, name: cat.name },
-      { $setOnInsert: { ...cat, user: null, isDefault: true } },
-      { upsert: true },
-    );
-    if (res.upsertedCount) categoriesCreated += 1;
-  }
-
-  // eslint-disable-next-line no-console
-  console.log(
-    `✅ Categories: ${categoriesCreated} created, ${
-      DEFAULT_CATEGORIES.length - categoriesCreated
-    } already existed.`,
-  );
 
   // Admin user
   if (env.ADMIN_EMAIL && env.ADMIN_PASSWORD) {

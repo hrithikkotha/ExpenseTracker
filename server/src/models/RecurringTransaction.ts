@@ -7,7 +7,6 @@ export interface IRecurringTransaction {
   account: Types.ObjectId;
   type: 'income' | 'expense';
   amount: number;
-  category: Types.ObjectId;
   note?: string;
   frequency: RecurrenceFrequency;
   executionTime: string; // "HH:MM" format
@@ -44,11 +43,6 @@ const recurringTransactionSchema = new Schema<IRecurringTransaction>(
       required: true,
       min: 0.01,
       set: (v: number) => Math.round(v * 100) / 100,
-    },
-    category: {
-      type: Schema.Types.ObjectId,
-      ref: 'Category',
-      required: true,
     },
     note: { type: String, trim: true, maxlength: 280 },
     frequency: {
