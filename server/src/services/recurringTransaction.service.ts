@@ -6,12 +6,16 @@ import {
 import { Transaction } from '../models/Transaction';
 import { Account } from '../models/Account';
 import { AppError } from '../utils/AppError';
-import type { CreateRecurringTransactionInput, UpdateRecurringTransactionInput } from '../validators/recurringTransaction.validators';
+import type {
+  CreateRecurringTransactionInput,
+  UpdateRecurringTransactionInput,
+  SetOverrideAmountInput,
+} from '../validators/recurringTransaction.validators';
 
-function calculateNextOccurrence(
-  date: Date,
-  frequency: RecurrenceFrequency,
-): Date {
+/**
+ * Advance a date by one frequency interval.
+ */
+function advanceByFrequency(date: Date, frequency: RecurrenceFrequency): Date {
   const next = new Date(date);
   switch (frequency) {
     case 'daily':
@@ -31,6 +35,16 @@ function calculateNextOccurrence(
       break;
   }
   return next;
+}
+
+/**
+ * Build the Date for a given calendar day at the recurring transaction's executionTime.
+ */
+function occurrenceAt(dayDate: Date, executionTime: string): Date {
+  const [hh, mm] = executionTime.split(':').map(Number);
+  const d = new Date(dayDate);
+  d.setHours(hh, mm, 0, 0);
+  return d;
 }
 
 export async function listRecurringTransactions(
@@ -62,22 +76,23 @@ export async function createRecurringTransaction(
   userId: string,
   input: CreateRecurringTransactionInput,
 ): Promise<RecurringTransactionDocument> {
-  // Validate account exists
   const account = await Account.findOne({ _id: input.accountId, user: userId });
   if (!account) throw AppError.badRequest('Invalid account');
 
-
-
   const startDate = new Date(input.startDate);
-  const nextOccurrence = calculateNextOccurrence(startDate, input.frequency);
+  // nextOccurrence = startDate at the executionTime — the first time it should fire
+  const nextOccurrence = occurrenceAt(startDate, input.executionTime);
 
   const recurring = await RecurringTransaction.create({
     user: userId,
     account: input.accountId,
     type: input.type,
     amount: input.amount,
+    purpose: input.purpose,
     note: input.note,
     frequency: input.frequency,
+    daysOfWeek: input.daysOfWeek ?? [],
+    executionTime: input.executionTime,
     startDate,
     endDate: input.endDate ? new Date(input.endDate) : undefined,
     nextOccurrence,
@@ -102,17 +117,16 @@ export async function updateRecurringTransaction(
     recurring.account = input.accountId as any;
   }
 
-  if (input.type) {
-    recurring.type = input.type;
-  }
-
+  if (input.type) recurring.type = input.type;
   if (input.amount !== undefined) recurring.amount = input.amount;
+  if (input.purpose !== undefined) recurring.purpose = input.purpose;
   if (input.note !== undefined) recurring.note = input.note;
   if (input.isActive !== undefined) recurring.isActive = input.isActive;
+  if (input.daysOfWeek !== undefined) recurring.daysOfWeek = input.daysOfWeek;
+  if (input.executionTime !== undefined) recurring.executionTime = input.executionTime;
 
   if (input.frequency) {
     recurring.frequency = input.frequency;
-    recurring.nextOccurrence = calculateNextOccurrence(recurring.nextOccurrence, input.frequency);
   }
 
   if (input.startDate) recurring.startDate = new Date(input.startDate);
@@ -134,6 +148,9 @@ export async function deleteRecurringTransaction(
   await recurring.deleteOne();
 }
 
+/**
+ * Skip the very next pending occurrence by advancing nextOccurrence by one interval.
+ */
 export async function skipNextOccurrence(
   userId: string,
   id: string,
@@ -141,51 +158,111 @@ export async function skipNextOccurrence(
   const recurring = await RecurringTransaction.findOne({ _id: id, user: userId });
   if (!recurring) throw AppError.notFound('Recurring transaction not found');
 
-  recurring.nextOccurrence = calculateNextOccurrence(recurring.nextOccurrence, recurring.frequency);
+  recurring.nextOccurrence = advanceByFrequency(recurring.nextOccurrence, recurring.frequency);
   await recurring.save();
   await recurring.populate('account', 'name icon color');
   return recurring;
 }
 
-// Called by cron job (runs hourly)
-export async function processRecurringTransactions(): Promise<number> {
+/**
+ * Set a one-time override amount for the next pending occurrence.
+ */
+export async function setNextOverrideAmount(
+  userId: string,
+  id: string,
+  input: SetOverrideAmountInput,
+): Promise<RecurringTransactionDocument> {
+  const recurring = await RecurringTransaction.findOne({ _id: id, user: userId });
+  if (!recurring) throw AppError.notFound('Recurring transaction not found');
+
+  recurring.nextOverrideAmount = input.amount;
+  await recurring.save();
+  await recurring.populate('account', 'name icon color');
+  return recurring;
+}
+
+/**
+ * Lazy catch-up processor — called when the user opens the app.
+ *
+ * For each active recurring transaction belonging to this user where
+ * nextOccurrence is in the past, we backfill ALL missed occurrences:
+ *   - Each transaction is created with its correct backdated date
+ *   - daysOfWeek is respected (if set, skip dates whose weekday isn't in the list)
+ *   - nextOverrideAmount is consumed on the FIRST pending occurrence then cleared
+ *   - nextOccurrence advances until it is in the future (or past endDate)
+ */
+export async function processPendingRecurringTransactions(userId: string): Promise<number> {
   const now = new Date();
-  const currentHour = now.getHours();
 
   const dueTransactions = await RecurringTransaction.find({
+    user: userId,
     isActive: true,
     nextOccurrence: { $lte: now },
     $or: [
       { endDate: { $exists: false } },
+      { endDate: null },
       { endDate: { $gte: now } },
     ],
   });
 
-  // Filter by executionTime - only process if current hour matches
-  const transactionsToProcess = dueTransactions.filter((rt) => {
-    const [targetHour] = rt.executionTime.split(':').map(Number);
-    return targetHour === currentHour;
-  });
-
   let created = 0;
-  for (const recurring of transactionsToProcess) {
-    try {
-      // Create actual transaction
-      await Transaction.create({
-        user: recurring.user,
-        account: recurring.account,
-        type: recurring.type,
-        amount: recurring.amount,
-        note: recurring.note,
-        date: recurring.nextOccurrence,
-      });
 
-      // Update next occurrence
+  for (const recurring of dueTransactions) {
+    try {
+      let current = new Date(recurring.nextOccurrence);
+      let overrideConsumed = false;
+
+      while (current <= now) {
+        // Check endDate
+        if (recurring.endDate && current > recurring.endDate) {
+          recurring.isActive = false;
+          break;
+        }
+
+        // Check daysOfWeek filter — 0=Sun … 6=Sat
+        const dayOfWeek = current.getDay();
+        const daysFilter = recurring.daysOfWeek ?? [];
+        const dayAllowed = daysFilter.length === 0 || daysFilter.includes(dayOfWeek);
+
+        if (dayAllowed) {
+          // Determine amount: use override only on the first occurrence
+          const amount =
+            !overrideConsumed && recurring.nextOverrideAmount != null
+              ? recurring.nextOverrideAmount
+              : recurring.amount;
+          overrideConsumed = true;
+
+          // Create the backdated transaction
+          await Transaction.create({
+            user: recurring.user,
+            account: recurring.account,
+            type: recurring.type,
+            amount,
+            purpose: recurring.purpose,
+            note: recurring.note,
+            date: occurrenceAt(current, recurring.executionTime),
+          });
+
+          // Update account balance
+          const delta = recurring.type === 'income' ? amount : -amount;
+          await Account.findByIdAndUpdate(recurring.account, {
+            $inc: { currentBalance: delta },
+          });
+
+          created++;
+        }
+
+        // Advance to next occurrence
+        current = advanceByFrequency(current, recurring.frequency);
+      }
+
+      // Clear the consumed override
+      if (overrideConsumed) {
+        recurring.nextOverrideAmount = undefined;
+      }
+
       recurring.lastCreatedAt = new Date();
-      recurring.nextOccurrence = calculateNextOccurrence(
-        recurring.nextOccurrence,
-        recurring.frequency
-      );
+      recurring.nextOccurrence = current;
 
       // Deactivate if past end date
       if (recurring.endDate && recurring.nextOccurrence > recurring.endDate) {
@@ -193,7 +270,6 @@ export async function processRecurringTransactions(): Promise<number> {
       }
 
       await recurring.save();
-      created++;
     } catch (error) {
       console.error(`Failed to process recurring transaction ${recurring._id}:`, error);
     }

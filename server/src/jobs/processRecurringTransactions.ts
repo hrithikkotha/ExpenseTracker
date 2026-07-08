@@ -1,9 +1,8 @@
 import { connectDB, disconnectDB } from '../config/db';
-import { processRecurringTransactions } from '../services/recurringTransaction.service';
 
 /**
- * Cron job to process recurring transactions.
- * Run this daily at 2 AM: 0 2 * * *
+ * Dev-only helper script. Production recurring transactions are processed lazily
+ * per-user when they open the app via POST /recurring-transactions/process-pending.
  *
  * Usage: node -r esbuild-register src/jobs/processRecurringTransactions.ts
  */
@@ -12,10 +11,7 @@ async function run() {
   try {
     await connectDB();
     console.log('✅ Connected to MongoDB');
-
-    const count = await processRecurringTransactions();
-    console.log(`✅ Processed ${count} recurring transactions`);
-
+    console.log('ℹ️  Recurring transactions are processed lazily per-user via the API in production.');
     await disconnectDB();
     process.exit(0);
   } catch (error) {

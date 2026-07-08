@@ -20,6 +20,7 @@ const RegisterPage = lazy(() => import('../pages/RegisterPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 const AdminLoginPage = lazy(() => import('../pages/AdminLoginPage'));
 const AdminDashboardPage = lazy(() => import('../pages/AdminDashboardPage'));
+const RecurringPage = lazy(() => import('../pages/RecurringPage'));
 
 /**
  * Route tree. The app branch is gated by <ProtectedRoute>; auth pages sit
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
           { path: 'transactions', element: <TransactionsPage /> },
           { path: 'accounts', element: <AccountsPage /> },
           { path: 'calendar', element: <CalendarPage /> },
+          { path: 'recurring', element: <RecurringPage /> },
           { path: 'more', element: <SettingsPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'settings', element: <SettingsPage /> },

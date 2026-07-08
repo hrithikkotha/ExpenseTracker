@@ -7,14 +7,17 @@ export interface IRecurringTransaction {
   account: Types.ObjectId;
   type: 'income' | 'expense';
   amount: number;
+  purpose: string;       // what the transaction is for, e.g. "Rent", "Salary"
   note?: string;
   frequency: RecurrenceFrequency;
-  executionTime: string; // "HH:MM" format
+  daysOfWeek: number[];  // 0=Sun…6=Sat; empty [] = fire every occurrence (no day filter)
+  executionTime: string; // "HH:MM" 24-hour; logical "fire time" used for backdating
   startDate: Date;
-  endDate?: Date; // null = no end date
-  nextOccurrence: Date; // indexed for cron job lookups
+  endDate?: Date;
+  nextOccurrence: Date;  // next date this should be processed; updated after each occurrence
   isActive: boolean;
-  lastCreatedAt?: Date; // timestamp of last auto-created transaction
+  nextOverrideAmount?: number; // one-time amount for next pending occurrence; cleared after use
+  lastCreatedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,19 +47,31 @@ const recurringTransactionSchema = new Schema<IRecurringTransaction>(
       min: 0.01,
       set: (v: number) => Math.round(v * 100) / 100,
     },
+    purpose: {
+      type: String,
+      required: [true, 'Purpose is required'],
+      trim: true,
+      maxlength: [100, 'Purpose must be 100 characters or less'],
+    },
     note: { type: String, trim: true, maxlength: 280 },
     frequency: {
       type: String,
       enum: ['daily', 'weekly', 'biweekly', 'monthly', 'yearly'],
       required: true,
     },
+    daysOfWeek: {
+      type: [Number],
+      default: [],
+      validate: {
+        validator: (arr: number[]) => arr.every((d) => d >= 0 && d <= 6),
+        message: 'daysOfWeek values must be 0 (Sun) through 6 (Sat)',
+      },
+    },
     executionTime: {
-      type: String, // Format: "HH:MM" (24-hour, e.g., "09:00")
+      type: String,
       default: '09:00',
       validate: {
-        validator: function(v: string) {
-          return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-        },
+        validator: (v: string) => /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v),
         message: 'executionTime must be in HH:MM format (24-hour)',
       },
     },
@@ -64,6 +79,7 @@ const recurringTransactionSchema = new Schema<IRecurringTransaction>(
     endDate: { type: Date },
     nextOccurrence: { type: Date, required: true },
     isActive: { type: Boolean, default: true },
+    nextOverrideAmount: { type: Number, min: 0.01 },
     lastCreatedAt: { type: Date },
   },
   {
@@ -77,9 +93,8 @@ const recurringTransactionSchema = new Schema<IRecurringTransaction>(
   },
 );
 
-// Index for cron job queries (find upcoming transactions to process)
+// Index for lazy-processing queries
 recurringTransactionSchema.index({ nextOccurrence: 1, isActive: 1 });
-// User's recurring transactions
 recurringTransactionSchema.index({ user: 1, isActive: 1 });
 
 export const RecurringTransaction = model<IRecurringTransaction>(

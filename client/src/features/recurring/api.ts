@@ -47,4 +47,20 @@ export const recurringApi = {
     );
     return data.data;
   },
+
+  setOverrideAmount: async (id: string, amount: number): Promise<RecurringTransaction> => {
+    const { data } = await api.patch<{ success: boolean; data: RecurringTransaction }>(
+      `/recurring-transactions/${id}/override-amount`,
+      { amount }
+    );
+    return data.data;
+  },
+
+  processPending: async (): Promise<{ processed: number }> => {
+    const { data } = await api.post<{ success: boolean; data: { processed: number } }>(
+      '/recurring-transactions/process-pending'
+    );
+    return data.data;
+  },
 };
+

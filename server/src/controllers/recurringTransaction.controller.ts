@@ -51,3 +51,19 @@ export const skipNext = catchAsync(async (req: Request, res: Response) => {
   );
   res.status(200).json({ success: true, data: recurring });
 });
+
+export const setOverrideAmount = catchAsync(async (req: Request, res: Response) => {
+  const recurring = await recurringTransactionService.setNextOverrideAmount(
+    req.user!.id,
+    req.params.id,
+    req.body
+  );
+  res.status(200).json({ success: true, data: recurring });
+});
+
+export const processPending = catchAsync(async (req: Request, res: Response) => {
+  const count = await recurringTransactionService.processPendingRecurringTransactions(
+    req.user!.id
+  );
+  res.status(200).json({ success: true, data: { processed: count } });
+});

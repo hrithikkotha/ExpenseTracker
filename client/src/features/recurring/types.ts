@@ -11,19 +11,16 @@ export interface RecurringTransaction {
   };
   type: 'income' | 'expense';
   amount: number;
-  category: {
-    _id: string;
-    name: string;
-    icon: string;
-    color: string;
-    type: 'income' | 'expense';
-  };
+  purpose: string;
   note?: string;
   frequency: RecurrenceFrequency;
+  daysOfWeek: number[];       // 0=Sun … 6=Sat; [] = every occurrence
+  executionTime: string;      // "HH:MM"
   startDate: string;
   endDate?: string;
   nextOccurrence: string;
   isActive: boolean;
+  nextOverrideAmount?: number;
   lastCreatedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -33,21 +30,26 @@ export interface CreateRecurringTransactionInput {
   type: 'income' | 'expense';
   amount: number;
   accountId: string;
-  categoryId: string;
+  purpose: string;
   note?: string;
   frequency: RecurrenceFrequency;
-  startDate: Date;
-  endDate?: Date;
+  daysOfWeek?: number[];
+  executionTime?: string;
+  startDate: Date | string;
+  endDate?: Date | string;
 }
 
 export interface UpdateRecurringTransactionInput {
   type?: 'income' | 'expense';
   amount?: number;
   accountId?: string;
-  categoryId?: string;
+  purpose?: string;
   note?: string;
   frequency?: RecurrenceFrequency;
-  startDate?: Date;
-  endDate?: Date;
+  daysOfWeek?: number[];
+  executionTime?: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
   isActive?: boolean;
 }
+

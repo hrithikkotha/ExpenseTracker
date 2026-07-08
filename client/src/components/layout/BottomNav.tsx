@@ -5,17 +5,17 @@ import {
   Receipt,
   PlusCircle,
   Wallet,
-  Menu,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { QuickAddSheet } from '@/components/transactions/QuickAddSheet';
 
 const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/', icon: LayoutDashboard, label: 'Home' },
   { path: '/transactions', icon: Receipt, label: 'Transactions' },
   { path: '/add', icon: PlusCircle, label: 'Add', isSpecial: true },
+  { path: '/recurring', icon: RefreshCw, label: 'Recurring' },
   { path: '/accounts', icon: Wallet, label: 'Accounts' },
-  { path: '/more', icon: Menu, label: 'More' },
 ];
 
 export function BottomNav() {

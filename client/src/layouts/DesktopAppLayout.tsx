@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut,
   Plus,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { logout as logoutApi } from '@/features/auth/auth.api';
@@ -18,6 +19,7 @@ import { QuickAddSheet } from '@/components/transactions/QuickAddSheet';
 const sidebarItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/transactions', icon: Receipt, label: 'Transactions' },
+  { path: '/recurring', icon: RefreshCw, label: 'Recurring' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
   { path: '/accounts', icon: Wallet, label: 'Accounts' },
   { path: '/settings', icon: Settings, label: 'Settings' },

@@ -63,3 +63,29 @@ export function useSkipNextOccurrence() {
     },
   });
 }
+
+export function useSetOverrideAmount() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, amount }: { id: string; amount: number }) =>
+      recurringApi.setOverrideAmount(id, amount),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [RECURRING_QUERY_KEY] });
+    },
+  });
+}
+
+export function useProcessPendingRecurring() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => recurringApi.processPending(),
+    onSuccess: () => {
+      // Invalidate transactions and accounts so fresh data loads
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: [RECURRING_QUERY_KEY] });
+    },
+  });
+}
