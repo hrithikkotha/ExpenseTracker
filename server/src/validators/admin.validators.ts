@@ -14,3 +14,12 @@ export const toggleStatusSchema = z.object({
 });
 
 export type ToggleStatusInput = z.infer<typeof toggleStatusSchema>['body'];
+
+export const adminResetPasswordSchema = z.object({
+  params: z.object({ id: objectId }),
+  body: z.object({
+    password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+  }),
+});
+
+export type AdminResetPasswordInput = z.infer<typeof adminResetPasswordSchema>['body'];

@@ -1,5 +1,6 @@
 import { User } from '../models/User';
 import { Transaction } from '../models/Transaction';
+import { RefreshToken } from '../models/RefreshToken';
 import { AppError } from '../utils/AppError';
 
 interface UserListItem {
@@ -84,4 +85,25 @@ export async function toggleUserStatus(
     transactionCount: s?.count ?? 0,
     lastTransactionDate: s?.lastDate,
   };
+}
+
+export async function resetUserPassword(
+  userId: string,
+  newPassword: string,
+): Promise<void> {
+  const user = await User.findById(userId);
+  if (!user) throw AppError.notFound('User not found');
+
+  if (user.role === 'admin') {
+    throw AppError.forbidden('Cannot reset admin passwords');
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  // Invalidate all active RefreshTokens for this user (force logout)
+  await RefreshToken.updateMany(
+    { user: user._id, revokedAt: { $exists: false } },
+    { $set: { revokedAt: new Date() } },
+  );
 }

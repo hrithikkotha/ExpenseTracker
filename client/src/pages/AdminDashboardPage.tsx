@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, UserCheck, UserPlus, Activity } from 'lucide-react';
+import { Users, UserCheck, UserPlus, Activity, Key } from 'lucide-react';
 import { api } from '../lib/axios';
 
 interface UserData {
@@ -39,6 +39,11 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [resettingUser, setResettingUser] = useState<UserData | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -64,6 +69,33 @@ export default function AdminDashboardPage() {
       console.error('Failed to toggle status:', err);
     } finally {
       setToggling(null);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resettingUser) return;
+    if (newPassword.length < 8) {
+      setResetError('Password must be at least 8 characters long.');
+      return;
+    }
+
+    setResetLoading(true);
+    setResetError('');
+    setResetSuccess('');
+    try {
+      await api.patch(`/admin/users/${resettingUser._id}/reset-password`, { password: newPassword });
+      setResetSuccess(`Password for ${resettingUser.name} has been reset successfully!`);
+      setNewPassword('');
+      setTimeout(() => {
+        setResettingUser(null);
+        setResetSuccess('');
+      }, 2000);
+    } catch (err: any) {
+      console.error(err);
+      setResetError(err.response?.data?.message || 'Failed to reset password. Please try again.');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -161,11 +193,21 @@ export default function AdminDashboardPage() {
                         {timeAgo(user.lastTransactionDate)}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <ToggleButton
-                          isActive={user.isActive}
-                          isLoading={toggling === user._id}
-                          onClick={() => toggleStatus(user._id, !user.isActive)}
-                        />
+                        <div className="flex items-center justify-center gap-2">
+                          <ToggleButton
+                            isActive={user.isActive}
+                            isLoading={toggling === user._id}
+                            onClick={() => toggleStatus(user._id, !user.isActive)}
+                          />
+                          <button
+                            onClick={() => setResettingUser(user)}
+                            className="px-2.5 py-1.5 text-xs font-medium text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 rounded-lg transition-colors flex items-center justify-center gap-1"
+                            title="Reset Password"
+                          >
+                            <Key className="w-3.5 h-3.5" />
+                            Reset Pass
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -207,13 +249,22 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Action Button */}
-                    <ToggleButton
-                      isActive={user.isActive}
-                      isLoading={toggling === user._id}
-                      onClick={() => toggleStatus(user._id, !user.isActive)}
-                      fullWidth
-                    />
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <ToggleButton
+                        isActive={user.isActive}
+                        isLoading={toggling === user._id}
+                        onClick={() => toggleStatus(user._id, !user.isActive)}
+                        fullWidth
+                      />
+                      <button
+                        onClick={() => setResettingUser(user)}
+                        className="px-3 py-2 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 rounded-lg text-xs font-medium transition-colors min-h-[36px] flex-1 flex items-center justify-center gap-1.5"
+                      >
+                        <Key className="w-3.5 h-3.5" />
+                        Reset Password
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -221,6 +272,73 @@ export default function AdminDashboardPage() {
           </>
         )}
       </div>
+
+      {/* Reset Password Modal */}
+      {resettingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div>
+              <h3 className="text-lg font-bold text-white">Reset User Password</h3>
+              <p className="text-sm text-gray-400">
+                Set a new password for <span className="font-semibold text-gray-200">{resettingUser.name}</span> ({resettingUser.email}).
+              </p>
+            </div>
+
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label htmlFor="modal-password" className="block text-xs font-medium text-gray-400 mb-1">
+                  New Password
+                </label>
+                <input
+                  id="modal-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  placeholder="At least 8 characters"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              {resetError && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg p-2.5">
+                  {resetError}
+                </div>
+              )}
+
+              {resetSuccess && (
+                <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-xs rounded-lg p-2.5">
+                  {resetSuccess}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 text-sm pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResettingUser(null);
+                    setNewPassword('');
+                    setResetError('');
+                    setResetSuccess('');
+                  }}
+                  disabled={resetLoading}
+                  className="px-4 py-2 bg-gray-800 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading || !!resetSuccess}
+                  className="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 rounded-lg transition-colors font-medium"
+                >
+                  {resetLoading ? 'Resetting...' : 'Save Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

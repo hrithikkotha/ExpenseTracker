@@ -11,3 +11,8 @@ export const toggleUserStatus = catchAsync(async (req: Request, res: Response) =
   const user = await adminService.toggleUserStatus(req.params.id, req.body.isActive);
   res.status(200).json({ success: true, data: user });
 });
+
+export const resetUserPassword = catchAsync(async (req: Request, res: Response) => {
+  await adminService.resetUserPassword(req.params.id, req.body.password);
+  res.status(200).json({ success: true, message: 'User password reset successfully' });
+});
