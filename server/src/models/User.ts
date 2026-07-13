@@ -13,6 +13,8 @@ export interface IUser {
   isEmailVerified: boolean;
   provider: 'local' | 'google';
   lastLoginAt?: Date;
+  passwordResetOTP?: string;
+  passwordResetOTPExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,6 +60,8 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     isEmailVerified: { type: Boolean, default: false },
     provider: { type: String, enum: ['local', 'google'], default: 'local' },
     lastLoginAt: { type: Date },
+    passwordResetOTP: { type: String, select: false },
+    passwordResetOTPExpires: { type: Date, select: false },
   },
   {
     timestamps: true,

@@ -47,3 +47,19 @@ export const me = catchAsync(async (req: Request, res: Response) => {
   // authGuard guarantees req.user is set.
   res.status(200).json({ success: true, data: { user: req.user } });
 });
+
+export const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+  await authService.requestPasswordResetOTP(req.body);
+  res.status(200).json({
+    success: true,
+    message: 'If the email exists, a password reset OTP has been sent.',
+  });
+});
+
+export const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  await authService.resetPasswordWithOTP(req.body);
+  res.status(200).json({
+    success: true,
+    message: 'Password has been reset successfully.',
+  });
+});

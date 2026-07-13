@@ -2,13 +2,20 @@ import { User, type UserDocument } from '../models/User';
 import { RefreshToken } from '../models/RefreshToken';
 import { Account } from '../models/Account';
 import { AppError } from '../utils/AppError';
+import crypto from 'node:crypto';
 import {
   generateRefreshToken,
   hashToken,
   refreshTokenExpiry,
   signAccessToken,
 } from '../utils/token';
-import type { LoginInput, RegisterInput } from '../validators/auth.validators';
+import type {
+  LoginInput,
+  RegisterInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+} from '../validators/auth.validators';
+import { sendPasswordResetOTPEmail } from './email.service';
 
 interface RequestMeta {
   userAgent?: string;
@@ -137,6 +144,49 @@ export async function logout(rawToken: string | undefined): Promise<void> {
   const tokenHash = hashToken(rawToken);
   await RefreshToken.updateOne(
     { tokenHash, revokedAt: { $exists: false } },
+    { $set: { revokedAt: new Date() } },
+  );
+}
+
+export async function requestPasswordResetOTP(input: ForgotPasswordInput): Promise<void> {
+  const user = await User.findOne({ email: input.email });
+  // Always return success/avoid enumeration
+  if (!user) return;
+
+  // Generate 6-digit numeric OTP
+  const otp = crypto.randomInt(100000, 999999).toString();
+  const hashedOTP = hashToken(otp);
+  const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  user.passwordResetOTP = hashedOTP;
+  user.passwordResetOTPExpires = otpExpiry;
+  await user.save();
+
+  await sendPasswordResetOTPEmail(user.email, otp);
+}
+
+export async function resetPasswordWithOTP(input: ResetPasswordInput): Promise<void> {
+  const hashedOTP = hashToken(input.otp);
+
+  const user = await User.findOne({
+    email: input.email,
+    passwordResetOTP: hashedOTP,
+    passwordResetOTPExpires: { $gt: new Date() },
+  }).select('+password');
+
+  if (!user) {
+    throw AppError.unauthorized('Invalid or expired OTP');
+  }
+
+  // Update password and clear OTP
+  user.password = input.password;
+  user.passwordResetOTP = undefined;
+  user.passwordResetOTPExpires = undefined;
+  await user.save();
+
+  // Invalidate user sessions / refresh tokens
+  await RefreshToken.updateMany(
+    { user: user._id, revokedAt: { $exists: false } },
     { $set: { revokedAt: new Date() } },
   );
 }

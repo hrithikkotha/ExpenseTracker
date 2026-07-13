@@ -26,7 +26,13 @@ api.interceptors.request.use((config) => {
 });
 
 // Endpoints that must never trigger the refresh-retry loop.
-const AUTH_BYPASS = ['/auth/refresh', '/auth/login', '/auth/register'];
+const AUTH_BYPASS = [
+  '/auth/refresh',
+  '/auth/login',
+  '/auth/register',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+];
 
 interface RetriableConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
