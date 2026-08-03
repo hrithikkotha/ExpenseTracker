@@ -114,16 +114,20 @@ export async function updateRecurringTransaction(
   id: string,
   input: UpdateRecurringTransactionInput,
 ): Promise<RecurringTransactionDocument> {
-  console.log('updateRecurringTransaction called with:');
+  console.log('=== updateRecurringTransaction DEBUG ===');
+  console.log('Model name:', RecurringTransaction.modelName);
+  console.log('Collection name:', RecurringTransaction.collection.name);
   console.log('userId:', userId);
   console.log('id:', id);
   console.log('input:', JSON.stringify(input, null, 2));
 
   // First verify the recurring transaction exists and belongs to the user
-  const existing = await RecurringTransaction.findOne({ _id: id, user: userId });
+  const existing = await RecurringTransaction.findOne({ _id: id, user: userId }).lean();
   if (!existing) throw AppError.notFound('Recurring transaction not found');
 
-  console.log('Existing document:', JSON.stringify(existing.toObject(), null, 2));
+  console.log('Existing document keys:', Object.keys(existing));
+  console.log('Has category field?', 'category' in existing);
+  console.log('Existing document:', JSON.stringify(existing, null, 2));
 
   // Validate account if provided
   if (input.accountId) {
