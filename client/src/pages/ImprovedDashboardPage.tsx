@@ -68,9 +68,21 @@ function ImprovedDashboardPage() {
   } = useTransactions({ sort: '-date', page: 1, limit: 10 });
 
   // Fetch all transactions for pie chart (max limit is 100 per backend validator)
+  // Apply the same date filters as the summary
+  const transactionFilters = useMemo(() => {
+    const filters: { sort: string; page: number; limit: number; from?: string; to?: string } = {
+      sort: '-date',
+      page: 1,
+      limit: 100,
+    };
+    if (summaryFilters.from) filters.from = summaryFilters.from;
+    if (summaryFilters.to) filters.to = summaryFilters.to;
+    return filters;
+  }, [summaryFilters]);
+
   const {
     data: allTransactionsData,
-  } = useTransactions({ sort: '-date', page: 1, limit: 100 });
+  } = useTransactions(transactionFilters);
 
   const recent = recentData?.items ?? [];
   const allTransactions = allTransactionsData?.items ?? [];

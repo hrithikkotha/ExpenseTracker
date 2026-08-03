@@ -39,12 +39,17 @@ function advanceByFrequency(date: Date, frequency: RecurrenceFrequency): Date {
 
 /**
  * Build the Date for a given calendar day at the recurring transaction's executionTime.
+ * Extracts the calendar date components to avoid timezone-related shifts.
  */
 function occurrenceAt(dayDate: Date, executionTime: string): Date {
   const [hh, mm] = executionTime.split(':').map(Number);
-  const d = new Date(dayDate);
-  d.setHours(hh, mm, 0, 0);
-  return d;
+  // Extract the calendar date components (year, month, day) to avoid copying
+  // timezone offsets that could shift the date when we set the time
+  const year = dayDate.getFullYear();
+  const month = dayDate.getMonth();
+  const day = dayDate.getDate();
+  // Create a new date with the extracted date and specified time
+  return new Date(year, month, day, hh, mm, 0, 0);
 }
 
 export async function listRecurringTransactions(
