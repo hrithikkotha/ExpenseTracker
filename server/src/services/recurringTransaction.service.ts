@@ -114,20 +114,9 @@ export async function updateRecurringTransaction(
   id: string,
   input: UpdateRecurringTransactionInput,
 ): Promise<RecurringTransactionDocument> {
-  console.log('=== updateRecurringTransaction DEBUG ===');
-  console.log('Model name:', RecurringTransaction.modelName);
-  console.log('Collection name:', RecurringTransaction.collection.name);
-  console.log('userId:', userId);
-  console.log('id:', id);
-  console.log('input:', JSON.stringify(input, null, 2));
-
   // First verify the recurring transaction exists and belongs to the user
-  const existing = await RecurringTransaction.findOne({ _id: id, user: userId }).lean();
+  const existing = await RecurringTransaction.findOne({ _id: id, user: userId });
   if (!existing) throw AppError.notFound('Recurring transaction not found');
-
-  console.log('Existing document keys:', Object.keys(existing));
-  console.log('Has category field?', 'category' in existing);
-  console.log('Existing document:', JSON.stringify(existing, null, 2));
 
   // Validate account if provided
   if (input.accountId) {
@@ -151,29 +140,18 @@ export async function updateRecurringTransaction(
     updateObj.endDate = input.endDate ? new Date(input.endDate) : null;
   }
 
-  console.log('About to update collection:', RecurringTransaction.collection.collectionName);
-  console.log('Update object:', JSON.stringify(updateObj, null, 2));
+  // Use raw MongoDB collection to update, bypassing Mongoose validation
+  // This avoids validation errors from stale schema fields
+  await RecurringTransaction.collection.updateOne(
+    { _id: new Types.ObjectId(id), user: new Types.ObjectId(userId) },
+    { $set: updateObj }
+  );
 
-  try {
-    // Use the raw collection to update without Mongoose validation
-    const updateResult = await RecurringTransaction.collection.updateOne(
-      { _id: new Types.ObjectId(id), user: new Types.ObjectId(userId) },
-      { $set: updateObj }
-    );
+  // Fetch the updated document using Mongoose with populate
+  const updated = await RecurringTransaction.findById(id).populate('account', 'name icon color');
 
-    console.log('Update result:', updateResult);
-
-    // Fetch the updated document using Mongoose
-    const updated = await RecurringTransaction.findById(id).populate('account', 'name icon color');
-
-    if (!updated) throw AppError.notFound('Recurring transaction not found after update');
-
-    console.log('Successfully updated and fetched document');
-    return updated;
-  } catch (error) {
-    console.error('Error during update:', error);
-    throw error;
-  }
+  if (!updated) throw AppError.notFound('Recurring transaction not found');
+  return updated;
 }
 
 export async function deleteRecurringTransaction(

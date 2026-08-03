@@ -31,7 +31,6 @@ function EditRecurringModal({
   onClose: () => void;
   currencySymbol: string;
 }) {
-  console.log('EditRecurringModal opened for recurring transaction:', recurring);
   const updateRecurring = useUpdateRecurringTransaction();
   const [formData, setFormData] = useState({
     amount: recurring.amount.toString(),
@@ -52,9 +51,6 @@ function EditRecurringModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    console.log('Form data before validation:', formData);
-    console.log('Selected days:', selectedDays);
 
     const amount = parseFloat(formData.amount);
     if (!amount || amount <= 0) {
@@ -95,41 +91,14 @@ function EditRecurringModal({
         updateData.endDate = formData.endDate;
       }
 
-      console.log('Updating recurring transaction:');
-      console.log('ID:', recurring._id);
-      console.log('Update payload:', JSON.stringify(updateData, null, 2));
-      console.log('Payload types:', {
-        amount: typeof updateData.amount,
-        purpose: typeof updateData.purpose,
-        frequency: typeof updateData.frequency,
-        executionTime: typeof updateData.executionTime,
-        daysOfWeek: Array.isArray(updateData.daysOfWeek) ? `array[${updateData.daysOfWeek.length}]` : typeof updateData.daysOfWeek,
-        startDate: typeof updateData.startDate,
-        note: typeof updateData.note,
-        endDate: typeof updateData.endDate,
-      });
-
       await updateRecurring.mutateAsync({
         id: recurring._id,
         input: updateData,
       });
       onClose();
     } catch (error: any) {
-      console.error('Failed to update recurring transaction:', error);
-      console.error('Full error response:', JSON.stringify(error?.response?.data, null, 2));
-
       const errorData = error?.response?.data;
-      let errorMsg = error?.message || 'Unknown error';
-
-      if (errorData?.error?.details) {
-        console.error('Validation details:', errorData.error.details);
-        errorMsg = `Validation failed: ${JSON.stringify(errorData.error.details)}`;
-      } else if (errorData?.error?.message) {
-        errorMsg = errorData.error.message;
-      } else if (errorData?.message) {
-        errorMsg = errorData.message;
-      }
-
+      const errorMsg = errorData?.error?.message || errorData?.message || error?.message || 'Unknown error';
       alert(`Failed to update: ${errorMsg}`);
     }
   };

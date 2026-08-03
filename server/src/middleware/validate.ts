@@ -9,10 +9,6 @@ import type { ZodTypeAny } from 'zod';
 export const validate =
   (schema: ZodTypeAny) =>
   (req: Request, _res: Response, next: NextFunction): void => {
-    console.log('🟡 Validate middleware: validating request');
-    console.log('🟡 Request path:', req.path);
-    console.log('🟡 Request body before validation:', JSON.stringify(req.body, null, 2));
-
     const parsed = schema.parse({
       body: req.body,
       query: req.query,
@@ -28,7 +24,5 @@ export const validate =
     if (parsed.params !== undefined) {
       Object.assign(req.params, parsed.params);
     }
-
-    console.log('🟡 Validate middleware: validation passed');
     next();
   };
