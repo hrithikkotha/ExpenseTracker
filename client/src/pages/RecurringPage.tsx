@@ -31,6 +31,7 @@ function EditRecurringModal({
   onClose: () => void;
   currencySymbol: string;
 }) {
+  console.log('EditRecurringModal opened for recurring transaction:', recurring);
   const updateRecurring = useUpdateRecurringTransaction();
   const [formData, setFormData] = useState({
     amount: recurring.amount.toString(),
@@ -72,31 +73,41 @@ function EditRecurringModal({
     }
 
     try {
-      // Build the update payload
-      const updateData: Record<string, any> = {
-        amount: parseFloat(formData.amount),
-        purpose: formData.purpose.trim(),
-        frequency: formData.frequency,
-        executionTime: formData.executionTime,
-        daysOfWeek: selectedDays,
-        startDate: formData.startDate,
-      };
+      // Build the update payload - make sure all types match backend expectations
+      const updateData: Record<string, any> = {};
 
-      // Only add note if it has content (or explicitly set to empty to clear it)
+      // Required fields that always get sent
+      updateData.amount = parseFloat(formData.amount);
+      updateData.purpose = formData.purpose.trim();
+      updateData.frequency = formData.frequency;
+      updateData.executionTime = formData.executionTime;
+      updateData.daysOfWeek = selectedDays; // Array of numbers 0-6
+      updateData.startDate = formData.startDate; // ISO date string
+
+      // Optional note field
       const trimmedNote = formData.note.trim();
-      if (trimmedNote || recurring.note) {
-        // If there's a note or we're clearing an existing note
-        updateData.note = trimmedNote || undefined;
+      if (trimmedNote) {
+        updateData.note = trimmedNote;
       }
 
-      // Only add endDate if it's provided
+      // Optional endDate field
       if (formData.endDate && formData.endDate.trim()) {
         updateData.endDate = formData.endDate;
       }
 
       console.log('Updating recurring transaction:');
       console.log('ID:', recurring._id);
-      console.log('Data:', JSON.stringify(updateData, null, 2));
+      console.log('Update payload:', JSON.stringify(updateData, null, 2));
+      console.log('Payload types:', {
+        amount: typeof updateData.amount,
+        purpose: typeof updateData.purpose,
+        frequency: typeof updateData.frequency,
+        executionTime: typeof updateData.executionTime,
+        daysOfWeek: Array.isArray(updateData.daysOfWeek) ? `array[${updateData.daysOfWeek.length}]` : typeof updateData.daysOfWeek,
+        startDate: typeof updateData.startDate,
+        note: typeof updateData.note,
+        endDate: typeof updateData.endDate,
+      });
 
       await updateRecurring.mutateAsync({
         id: recurring._id,
@@ -105,8 +116,20 @@ function EditRecurringModal({
       onClose();
     } catch (error: any) {
       console.error('Failed to update recurring transaction:', error);
-      const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error';
-      console.error('Error details:', error?.response?.data);
+      console.error('Full error response:', JSON.stringify(error?.response?.data, null, 2));
+
+      const errorData = error?.response?.data;
+      let errorMsg = error?.message || 'Unknown error';
+
+      if (errorData?.error?.details) {
+        console.error('Validation details:', errorData.error.details);
+        errorMsg = `Validation failed: ${JSON.stringify(errorData.error.details)}`;
+      } else if (errorData?.error?.message) {
+        errorMsg = errorData.error.message;
+      } else if (errorData?.message) {
+        errorMsg = errorData.message;
+      }
+
       alert(`Failed to update: ${errorMsg}`);
     }
   };

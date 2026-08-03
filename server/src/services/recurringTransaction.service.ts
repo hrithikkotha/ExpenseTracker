@@ -139,6 +139,13 @@ export async function updateRecurringTransaction(
     recurring.endDate = input.endDate ? new Date(input.endDate) : undefined;
   }
 
+  // Remove any fields that don't belong to this model (like 'category' from old schema)
+  const doc = recurring as any;
+  if (doc.category) {
+    delete doc.category;
+    doc.$unset('category');
+  }
+
   await recurring.save();
   await recurring.populate('account', 'name icon color');
   return recurring;
