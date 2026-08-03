@@ -51,42 +51,63 @@ function EditRecurringModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log('Form data before validation:', formData);
+    console.log('Selected days:', selectedDays);
+
     const amount = parseFloat(formData.amount);
-    if (!amount || amount <= 0 || !formData.purpose.trim()) {
-      alert('Please enter valid amount and purpose');
+    if (!amount || amount <= 0) {
+      alert('Please enter a valid amount greater than 0');
+      return;
+    }
+
+    if (!formData.purpose.trim()) {
+      alert('Please enter a purpose');
+      return;
+    }
+
+    if (!formData.executionTime.match(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/)) {
+      alert('Invalid execution time format. Must be HH:MM');
       return;
     }
 
     try {
-      const updateData: any = {
-        amount,
+      // Build the update payload
+      const updateData: Record<string, any> = {
+        amount: parseFloat(formData.amount),
         purpose: formData.purpose.trim(),
         frequency: formData.frequency,
         executionTime: formData.executionTime,
-        startDate: formData.startDate,
         daysOfWeek: selectedDays,
+        startDate: formData.startDate,
       };
 
-      // Only include note if it's not empty
-      if (formData.note.trim()) {
-        updateData.note = formData.note.trim();
+      // Only add note if it has content (or explicitly set to empty to clear it)
+      const trimmedNote = formData.note.trim();
+      if (trimmedNote || recurring.note) {
+        // If there's a note or we're clearing an existing note
+        updateData.note = trimmedNote || undefined;
       }
 
-      // Only include endDate if it's not empty
-      if (formData.endDate) {
+      // Only add endDate if it's provided
+      if (formData.endDate && formData.endDate.trim()) {
         updateData.endDate = formData.endDate;
       }
 
-      console.log('Updating recurring transaction with data:', updateData);
+      console.log('Updating recurring transaction:');
+      console.log('ID:', recurring._id);
+      console.log('Data:', JSON.stringify(updateData, null, 2));
 
       await updateRecurring.mutateAsync({
         id: recurring._id,
         input: updateData,
       });
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update recurring transaction:', error);
-      alert(`Failed to update: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error';
+      console.error('Error details:', error?.response?.data);
+      alert(`Failed to update: ${errorMsg}`);
     }
   };
 
