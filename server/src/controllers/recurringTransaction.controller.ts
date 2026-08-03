@@ -28,11 +28,18 @@ export const create = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const update = catchAsync(async (req: Request, res: Response) => {
+  console.log('🔵 Controller: update endpoint hit');
+  console.log('🔵 req.params.id:', req.params.id);
+  console.log('🔵 req.body:', JSON.stringify(req.body, null, 2));
+  console.log('🔵 req.user.id:', req.user!.id);
+
   const recurring = await recurringTransactionService.updateRecurringTransaction(
     req.user!.id,
     req.params.id,
     req.body
   );
+
+  console.log('🔵 Controller: successfully updated');
   res.status(200).json({ success: true, data: recurring });
 });
 
