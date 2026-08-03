@@ -4,7 +4,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import Spinner from '../components/ui/Spinner';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Pagination from '../components/ui/Pagination';
-import TransactionFormModal from '../features/transactions/components/TransactionFormModal';
+import { QuickAddSheet } from '../components/transactions/QuickAddSheet';
 import TransactionFilterBar from '../features/transactions/components/TransactionFilterBar';
 import {
   useTransactions,
@@ -107,6 +107,13 @@ export default function TransactionsPage() {
   const openEdit = (t: Transaction) => {
     setEditing(t);
     setFormOpen(true);
+  };
+
+  const handleCloseForm = (isOpen: boolean) => {
+    setFormOpen(isOpen);
+    if (!isOpen) {
+      setEditing(undefined);
+    }
   };
   const confirmDelete = () => {
     if (!toDelete) return;
@@ -242,9 +249,9 @@ export default function TransactionsPage() {
         )}
       </div>
 
-      <TransactionFormModal
+      <QuickAddSheet
         open={formOpen}
-        onClose={() => setFormOpen(false)}
+        onOpenChange={handleCloseForm}
         transaction={editing}
       />
 

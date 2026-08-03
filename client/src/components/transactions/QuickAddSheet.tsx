@@ -7,8 +7,9 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrencySymbol } from '@/lib/currencies';
 import { useAccounts } from '@/features/accounts/hooks';
-import { useCreateTransaction, useTransactions } from '@/features/transactions/hooks';
+import { useCreateTransaction, useUpdateTransaction, useTransactions } from '@/features/transactions/hooks';
 import { useCreateRecurringTransaction } from '@/features/recurring/hooks';
+import type { Transaction } from '@/features/transactions/transaction.types';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -32,16 +33,19 @@ type QuickAddInput = z.infer<typeof quickAddSchema>;
 interface QuickAddSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  transaction?: Transaction; // If provided, we're editing instead of creating
 }
 
-export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
-  const [type, setType] = useState<'income' | 'expense'>('expense');
+export function QuickAddSheet({ open, onOpenChange, transaction }: QuickAddSheetProps) {
+  const isEditMode = !!transaction;
+  const [type, setType] = useState<'income' | 'expense'>(transaction?.type || 'expense');
   const [isRecurring, setIsRecurring] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const { user } = useAuth();
   const currencySymbol = getCurrencySymbol(user?.currency || 'INR');
   const { data: accounts = [] } = useAccounts();
   const createTransaction = useCreateTransaction();
+  const updateTransaction = useUpdateTransaction();
   const createRecurring = useCreateRecurringTransaction();
 
   const {
@@ -53,7 +57,18 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
     setValue,
   } = useForm<QuickAddInput>({
     resolver: zodResolver(quickAddSchema),
-    defaultValues: {
+    defaultValues: transaction ? {
+      type: transaction.type,
+      amount: transaction.amount,
+      accountId: '', // Will need to be fetched from transaction if available
+      purpose: transaction.purpose,
+      note: transaction.note || '',
+      date: new Date(transaction.date).toISOString().split('T')[0],
+      isRecurring: false,
+      frequency: 'daily',
+      executionTime: '09:00',
+      startDate: new Date().toISOString().split('T')[0],
+    } : {
       type: 'expense',
       date: new Date().toISOString().split('T')[0],
       isRecurring: false,
@@ -81,10 +96,23 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
   }, [recentTransactions]);
 
   // Purpose autocomplete state
-  const [purposeInput, setPurposeInput] = useState('');
+  const [purposeInput, setPurposeInput] = useState(transaction?.purpose || '');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const purposeInputRef = useRef<HTMLInputElement>(null);
+
+  // Update form when transaction changes (for edit mode)
+  useEffect(() => {
+    if (transaction) {
+      setType(transaction.type);
+      setPurposeInput(transaction.purpose);
+      setValue('type', transaction.type);
+      setValue('amount', transaction.amount);
+      setValue('purpose', transaction.purpose);
+      setValue('note', transaction.note || '');
+      setValue('date', new Date(transaction.date).toISOString().split('T')[0]);
+    }
+  }, [transaction, setValue]);
 
   // Filter suggestions based on input
   const filteredSuggestions = useMemo(() => {
@@ -143,7 +171,21 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
 
   const onSubmit = async (data: QuickAddInput) => {
     try {
-      if (isRecurring) {
+      if (isEditMode) {
+        // Edit existing transaction
+        await updateTransaction.mutateAsync({
+          id: transaction._id,
+          payload: {
+            type: data.type,
+            amount: data.amount,
+            accountId: data.accountId,
+            purpose: data.purpose,
+            note: data.note || undefined,
+            date: new Date(data.date).toISOString(),
+          },
+        });
+      } else if (isRecurring) {
+        // Create recurring transaction
         await createRecurring.mutateAsync({
           type: data.type,
           amount: data.amount,
@@ -157,6 +199,7 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
           endDate: data.endDate || undefined,
         });
       } else {
+        // Create one-time transaction
         await createTransaction.mutateAsync({
           type: data.type,
           amount: data.amount,
@@ -169,16 +212,16 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
       onOpenChange(false);
       reset();
     } catch (error) {
-      console.error('Failed to create transaction:', error);
+      console.error(`Failed to ${isEditMode ? 'update' : 'create'} transaction:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to create transaction: ${errorMessage}`);
+      alert(`Failed to ${isEditMode ? 'update' : 'create'} transaction: ${errorMessage}`);
     }
   };
 
   if (!open) return null;
 
   const activeAccounts = accounts.filter(a => !a.isArchived);
-  const isPending = createTransaction.isPending || createRecurring.isPending;
+  const isPending = createTransaction.isPending || createRecurring.isPending || updateTransaction.isPending;
 
   return (
     <>
@@ -193,8 +236,8 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Add Transaction</h2>
-            <p className="text-xs text-muted-foreground">Record your income or expense</p>
+            <h2 className="text-lg font-semibold text-foreground">{isEditMode ? 'Edit Transaction' : 'Add Transaction'}</h2>
+            <p className="text-xs text-muted-foreground">{isEditMode ? 'Update your transaction details' : 'Record your income or expense'}</p>
           </div>
           <button
             onClick={() => onOpenChange(false)}
@@ -343,8 +386,8 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
               />
             </div>
 
-            {/* Make Recurring Toggle */}
-            <div className="border-2 border-border rounded-xl overflow-hidden">
+            {/* Make Recurring Toggle - Only show when creating, not editing */}
+            {!isEditMode && <div className="border-2 border-border rounded-xl overflow-hidden">
               <button
                 type="button"
                 onClick={() => setIsRecurring(prev => !prev)}
@@ -450,7 +493,7 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
                   </div>
                 </div>
               )}
-            </div>
+            </div>}
 
             {/* Submit Button */}
             <button
@@ -465,10 +508,12 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
               )}
             >
               {isPending
-                ? 'Adding...'
-                : isRecurring
-                  ? `Set Up Recurring ${type === 'expense' ? 'Expense' : 'Income'}`
-                  : type === 'expense' ? 'Add Expense' : 'Add Income'
+                ? isEditMode ? 'Updating...' : 'Adding...'
+                : isEditMode
+                  ? `Update ${type === 'expense' ? 'Expense' : 'Income'}`
+                  : isRecurring
+                    ? `Set Up Recurring ${type === 'expense' ? 'Expense' : 'Income'}`
+                    : type === 'expense' ? 'Add Expense' : 'Add Income'
               }
             </button>
           </form>

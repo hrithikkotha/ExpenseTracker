@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RefreshCw, Plus, SkipForward, DollarSign, Pause, Play, Trash2, Clock, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
+import { RefreshCw, Plus, SkipForward, DollarSign, Pause, Play, Trash2, Clock, TrendingUp, TrendingDown, AlertCircle, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrencySymbol } from '@/lib/currencies';
@@ -21,6 +21,230 @@ const FREQUENCY_LABELS: Record<string, string> = {
   monthly: 'Monthly',
   yearly: 'Yearly',
 };
+
+function EditRecurringModal({
+  recurring,
+  onClose,
+  currencySymbol,
+}: {
+  recurring: RecurringTransaction;
+  onClose: () => void;
+  currencySymbol: string;
+}) {
+  const updateRecurring = useUpdateRecurringTransaction();
+  const [formData, setFormData] = useState({
+    amount: recurring.amount.toString(),
+    purpose: recurring.purpose,
+    note: recurring.note || '',
+    frequency: recurring.frequency,
+    executionTime: recurring.executionTime,
+    startDate: new Date(recurring.startDate).toISOString().split('T')[0],
+    endDate: recurring.endDate ? new Date(recurring.endDate).toISOString().split('T')[0] : '',
+  });
+  const [selectedDays, setSelectedDays] = useState<number[]>(recurring.daysOfWeek || []);
+
+  const toggleDay = (day: number) => {
+    setSelectedDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(formData.amount);
+    if (!amount || amount <= 0 || !formData.purpose.trim()) {
+      alert('Please enter valid amount and purpose');
+      return;
+    }
+
+    try {
+      const updateData: any = {
+        amount,
+        purpose: formData.purpose.trim(),
+        frequency: formData.frequency,
+        executionTime: formData.executionTime,
+        startDate: formData.startDate,
+        daysOfWeek: selectedDays,
+      };
+
+      // Only include note if it's not empty
+      if (formData.note.trim()) {
+        updateData.note = formData.note.trim();
+      }
+
+      // Only include endDate if it's not empty
+      if (formData.endDate) {
+        updateData.endDate = formData.endDate;
+      }
+
+      console.log('Updating recurring transaction with data:', updateData);
+
+      await updateRecurring.mutateAsync({
+        id: recurring._id,
+        input: updateData,
+      });
+      onClose();
+    } catch (error) {
+      console.error('Failed to update recurring transaction:', error);
+      alert(`Failed to update: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-background rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Edit Recurring Transaction</h2>
+            <p className="text-sm text-muted-foreground">Update schedule and details</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Amount */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Amount *</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">{currencySymbol}</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={formData.amount}
+                onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                className="w-full pl-10 pr-4 py-3 text-lg font-bold border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Purpose */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Purpose *</label>
+            <input
+              type="text"
+              value={formData.purpose}
+              onChange={e => setFormData({ ...formData, purpose: e.target.value })}
+              className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+              placeholder="e.g., Netflix Subscription"
+              maxLength={100}
+              required
+            />
+          </div>
+
+          {/* Note */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Note (Optional)</label>
+            <textarea
+              value={formData.note}
+              onChange={e => setFormData({ ...formData, note: e.target.value })}
+              rows={2}
+              className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none bg-background"
+            />
+          </div>
+
+          {/* Frequency */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Frequency</label>
+            <select
+              value={formData.frequency}
+              onChange={e => setFormData({ ...formData, frequency: e.target.value as any })}
+              className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Every 2 weeks</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+
+          {/* Days of Week */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Active Days <span className="text-muted-foreground font-normal">(empty = every occurrence)</span>
+            </label>
+            <div className="flex gap-1.5 flex-wrap">
+              {DAY_LABELS.map((label, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => toggleDay(idx)}
+                  className={cn(
+                    'w-10 h-10 rounded-full text-xs font-semibold transition-colors border-2',
+                    selectedDays.includes(idx)
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted text-muted-foreground border-transparent hover:border-primary/40'
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Execution Time */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Execution Time</label>
+            <input
+              type="time"
+              value={formData.executionTime}
+              onChange={e => setFormData({ ...formData, executionTime: e.target.value })}
+              className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+            />
+          </div>
+
+          {/* Start / End Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-2">Start Date *</label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={e => setFormData({ ...formData, startDate: e.target.value })}
+                className="w-full px-3 py-2 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">End Date</label>
+              <input
+                type="date"
+                value={formData.endDate}
+                onChange={e => setFormData({ ...formData, endDate: e.target.value })}
+                className="w-full px-3 py-2 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 rounded-lg font-medium bg-muted text-foreground hover:bg-muted/80 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={updateRecurring.isPending}
+              className="flex-1 py-3 rounded-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              {updateRecurring.isPending ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 function OverrideAmountModal({
   recurring,
@@ -89,6 +313,7 @@ function OverrideAmountModal({
 
 function RecurringDetailCard({ recurring, currencySymbol }: { recurring: RecurringTransaction; currencySymbol: string }) {
   const [showOverride, setShowOverride] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const skipNext = useSkipNextOccurrence();
   const updateRecurring = useUpdateRecurringTransaction();
   const deleteRecurring = useDeleteRecurringTransaction();
@@ -120,6 +345,13 @@ function RecurringDetailCard({ recurring, currencySymbol }: { recurring: Recurri
         <OverrideAmountModal
           recurring={recurring}
           onClose={() => setShowOverride(false)}
+          currencySymbol={currencySymbol}
+        />
+      )}
+      {showEdit && (
+        <EditRecurringModal
+          recurring={recurring}
+          onClose={() => setShowEdit(false)}
           currencySymbol={currencySymbol}
         />
       )}
@@ -196,6 +428,13 @@ function RecurringDetailCard({ recurring, currencySymbol }: { recurring: Recurri
         {/* Actions */}
         <div className="grid grid-cols-2 gap-2 pt-1">
           <button
+            onClick={() => setShowEdit(true)}
+            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors text-sm font-medium"
+          >
+            <Pencil className="w-4 h-4" />
+            Edit
+          </button>
+          <button
             onClick={() => skipNext.mutate(recurring._id)}
             disabled={skipNext.isPending || !recurring.isActive}
             className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-sm font-medium disabled:opacity-40"
@@ -227,7 +466,7 @@ function RecurringDetailCard({ recurring, currencySymbol }: { recurring: Recurri
           <button
             onClick={handleDelete}
             disabled={deleteRecurring.isPending}
-            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors text-sm font-medium"
+            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors text-sm font-medium col-span-2"
           >
             <Trash2 className="w-4 h-4" />
             Delete
