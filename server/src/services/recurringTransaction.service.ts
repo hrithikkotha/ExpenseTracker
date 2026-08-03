@@ -113,42 +113,48 @@ export async function updateRecurringTransaction(
   id: string,
   input: UpdateRecurringTransactionInput,
 ): Promise<RecurringTransactionDocument> {
-  const recurring = await RecurringTransaction.findOne({ _id: id, user: userId });
-  if (!recurring) throw AppError.notFound('Recurring transaction not found');
+  // First verify the recurring transaction exists and belongs to the user
+  const existing = await RecurringTransaction.findOne({ _id: id, user: userId });
+  if (!existing) throw AppError.notFound('Recurring transaction not found');
 
+  // Validate account if provided
   if (input.accountId) {
     const account = await Account.findOne({ _id: input.accountId, user: userId });
     if (!account) throw AppError.badRequest('Invalid account');
-    recurring.account = input.accountId as any;
   }
 
-  if (input.type) recurring.type = input.type;
-  if (input.amount !== undefined) recurring.amount = input.amount;
-  if (input.purpose !== undefined) recurring.purpose = input.purpose;
-  if (input.note !== undefined) recurring.note = input.note;
-  if (input.isActive !== undefined) recurring.isActive = input.isActive;
-  if (input.daysOfWeek !== undefined) recurring.daysOfWeek = input.daysOfWeek;
-  if (input.executionTime !== undefined) recurring.executionTime = input.executionTime;
-
-  if (input.frequency) {
-    recurring.frequency = input.frequency;
-  }
-
-  if (input.startDate) recurring.startDate = new Date(input.startDate);
+  // Build the update object
+  const updateObj: any = {};
+  if (input.type !== undefined) updateObj.type = input.type;
+  if (input.amount !== undefined) updateObj.amount = input.amount;
+  if (input.purpose !== undefined) updateObj.purpose = input.purpose;
+  if (input.note !== undefined) updateObj.note = input.note;
+  if (input.isActive !== undefined) updateObj.isActive = input.isActive;
+  if (input.daysOfWeek !== undefined) updateObj.daysOfWeek = input.daysOfWeek;
+  if (input.executionTime !== undefined) updateObj.executionTime = input.executionTime;
+  if (input.frequency !== undefined) updateObj.frequency = input.frequency;
+  if (input.accountId !== undefined) updateObj.account = input.accountId;
+  if (input.startDate !== undefined) updateObj.startDate = new Date(input.startDate);
   if (input.endDate !== undefined) {
-    recurring.endDate = input.endDate ? new Date(input.endDate) : undefined;
+    updateObj.endDate = input.endDate ? new Date(input.endDate) : null;
   }
 
-  // Remove any fields that don't belong to this model (like 'category' from old schema)
-  const doc = recurring as any;
-  if (doc.category) {
-    delete doc.category;
-    doc.$unset('category');
-  }
+  // Use findOneAndUpdate to avoid validation issues with stale fields
+  // Also explicitly unset the category field if it exists from old schema
+  const updated = await RecurringTransaction.findOneAndUpdate(
+    { _id: id, user: userId },
+    {
+      $set: updateObj,
+      $unset: { category: '' } // Remove stale category field
+    },
+    {
+      new: true,
+      runValidators: true // Only validate the fields we're updating
+    }
+  ).populate('account', 'name icon color');
 
-  await recurring.save();
-  await recurring.populate('account', 'name icon color');
-  return recurring;
+  if (!updated) throw AppError.notFound('Recurring transaction not found');
+  return updated;
 }
 
 export async function deleteRecurringTransaction(
