@@ -70,7 +70,13 @@ function ImprovedDashboardPage() {
   // Fetch all transactions for pie chart (max limit is 100 per backend validator)
   // Apply the same date filters as the summary
   const transactionFilters = useMemo(() => {
-    const filters: { sort: string; page: number; limit: number; from?: string; to?: string } = {
+    const filters: {
+      sort: '-date';
+      page: number;
+      limit: number;
+      from?: string;
+      to?: string;
+    } = {
       sort: '-date',
       page: 1,
       limit: 100,
