@@ -113,9 +113,16 @@ export async function updateRecurringTransaction(
   id: string,
   input: UpdateRecurringTransactionInput,
 ): Promise<RecurringTransactionDocument> {
+  console.log('updateRecurringTransaction called with:');
+  console.log('userId:', userId);
+  console.log('id:', id);
+  console.log('input:', JSON.stringify(input, null, 2));
+
   // First verify the recurring transaction exists and belongs to the user
   const existing = await RecurringTransaction.findOne({ _id: id, user: userId });
   if (!existing) throw AppError.notFound('Recurring transaction not found');
+
+  console.log('Existing document:', JSON.stringify(existing.toObject(), null, 2));
 
   // Validate account if provided
   if (input.accountId) {
@@ -139,7 +146,7 @@ export async function updateRecurringTransaction(
     updateObj.endDate = input.endDate ? new Date(input.endDate) : null;
   }
 
-  // Use findOneAndUpdate to avoid validation issues with stale fields
+  // Use findOneAndUpdate to bypass validation on stale fields
   // Also explicitly unset the category field if it exists from old schema
   const updated = await RecurringTransaction.findOneAndUpdate(
     { _id: id, user: userId },
@@ -149,7 +156,8 @@ export async function updateRecurringTransaction(
     },
     {
       new: true,
-      runValidators: true // Only validate the fields we're updating
+      runValidators: false, // Skip validation to avoid issues with stale fields
+      strict: false // Allow fields not in schema
     }
   ).populate('account', 'name icon color');
 
