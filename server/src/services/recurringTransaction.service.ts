@@ -6,6 +6,7 @@ import {
 import { Transaction } from '../models/Transaction';
 import { Account } from '../models/Account';
 import { AppError } from '../utils/AppError';
+import { Types } from 'mongoose';
 import type {
   CreateRecurringTransactionInput,
   UpdateRecurringTransactionInput,
@@ -146,20 +147,20 @@ export async function updateRecurringTransaction(
     updateObj.endDate = input.endDate ? new Date(input.endDate) : null;
   }
 
-  // Use findOneAndUpdate to bypass validation on stale fields
-  // Also explicitly unset the category field if it exists from old schema
-  const updated = await RecurringTransaction.findOneAndUpdate(
-    { _id: id, user: userId },
-    {
-      $set: updateObj,
-      $unset: { category: '' } // Remove stale category field
-    },
-    {
-      new: true,
-      runValidators: false, // Skip validation to avoid issues with stale fields
-      strict: false // Allow fields not in schema
-    }
-  ).populate('account', 'name icon color');
+  // First, remove the stale category field directly from MongoDB without Mongoose validation
+  await RecurringTransaction.collection.updateOne(
+    { _id: new Types.ObjectId(id), user: new Types.ObjectId(userId) },
+    { $unset: { category: '' } }
+  );
+
+  // Now update the actual fields we want to change
+  await RecurringTransaction.collection.updateOne(
+    { _id: new Types.ObjectId(id), user: new Types.ObjectId(userId) },
+    { $set: updateObj }
+  );
+
+  // Fetch the updated document using Mongoose with populate
+  const updated = await RecurringTransaction.findById(id).populate('account', 'name icon color');
 
   if (!updated) throw AppError.notFound('Recurring transaction not found');
   return updated;
