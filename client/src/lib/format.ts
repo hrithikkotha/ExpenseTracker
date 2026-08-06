@@ -27,15 +27,18 @@ export function getCurrencySymbol(currency = 'USD'): string {
 /** Formats an ISO date string as a short, locale-aware date. */
 export function formatDate(iso: string): string {
   const d = new Date(iso);
+  // Use UTC methods to avoid timezone shifts that can change the displayed date
   return d.toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   });
 }
 
 /** ISO date (yyyy-mm-dd) for <input type="date">, defaulting to today. */
 export function toDateInputValue(iso?: string): string {
   const d = iso ? new Date(iso) : new Date();
+  // Use toISOString to get UTC date, which prevents timezone shifts
   return d.toISOString().slice(0, 10);
 }
