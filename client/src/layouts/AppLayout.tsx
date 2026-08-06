@@ -16,6 +16,7 @@ export function AppLayout({ children, title, actions }: AppLayoutProps) {
 
   // Trigger lazy catch-up on app open
   useEffect(() => {
+    console.log('[AppLayout] Calling processPending.mutate()');
     processPending.mutate();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
