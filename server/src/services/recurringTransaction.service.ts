@@ -14,9 +14,9 @@ import type {
 } from '../validators/recurringTransaction.validators';
 
 /**
- * Advance a date by one frequency interval.
+ * Advance a date by one frequency interval, respecting dayOfMonth for monthly recurrence.
  */
-function advanceByFrequency(date: Date, frequency: RecurrenceFrequency): Date {
+function advanceByFrequency(date: Date, frequency: RecurrenceFrequency, dayOfMonth?: number): Date {
   const next = new Date(date);
   switch (frequency) {
     case 'daily':
@@ -30,6 +30,10 @@ function advanceByFrequency(date: Date, frequency: RecurrenceFrequency): Date {
       break;
     case 'monthly':
       next.setMonth(next.getMonth() + 1);
+      if (dayOfMonth) {
+        const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+        next.setDate(Math.min(dayOfMonth, lastDay));
+      }
       break;
     case 'yearly':
       next.setFullYear(next.getFullYear() + 1);
@@ -98,6 +102,7 @@ export async function createRecurringTransaction(
     note: input.note,
     frequency: input.frequency,
     daysOfWeek: input.daysOfWeek ?? [],
+    dayOfMonth: input.dayOfMonth,
     executionTime: input.executionTime,
     startDate,
     endDate: input.endDate ? new Date(input.endDate) : undefined,
@@ -132,6 +137,7 @@ export async function updateRecurringTransaction(
   if (input.note !== undefined) updateObj.note = input.note;
   if (input.isActive !== undefined) updateObj.isActive = input.isActive;
   if (input.daysOfWeek !== undefined) updateObj.daysOfWeek = input.daysOfWeek;
+  if (input.dayOfMonth !== undefined) updateObj.dayOfMonth = input.dayOfMonth;
   if (input.executionTime !== undefined) updateObj.executionTime = input.executionTime;
   if (input.frequency !== undefined) updateObj.frequency = input.frequency;
   if (input.accountId !== undefined) updateObj.account = input.accountId;
@@ -268,7 +274,7 @@ export async function processPendingRecurringTransactions(userId: string): Promi
         }
 
         // Advance to next occurrence
-        current = advanceByFrequency(current, recurring.frequency);
+        current = advanceByFrequency(current, recurring.frequency, recurring.dayOfMonth);
       }
 
       // Clear the consumed override

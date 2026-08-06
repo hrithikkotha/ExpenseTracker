@@ -14,7 +14,8 @@ export interface RecurringTransaction {
   purpose: string;
   note?: string;
   frequency: RecurrenceFrequency;
-  daysOfWeek: number[];       // 0=Sun … 6=Sat; [] = every occurrence
+  daysOfWeek: number[];       // 0=Sun … 6=Sat; for weekly/biweekly; [] = every occurrence
+  dayOfMonth?: number;        // 1-31 for monthly
   executionTime: string;      // "HH:MM"
   startDate: string;
   endDate?: string;
@@ -34,6 +35,7 @@ export interface CreateRecurringTransactionInput {
   note?: string;
   frequency: RecurrenceFrequency;
   daysOfWeek?: number[];
+  dayOfMonth?: number;
   executionTime?: string;
   startDate: Date | string;
   endDate?: Date | string;
@@ -47,6 +49,7 @@ export interface UpdateRecurringTransactionInput {
   note?: string;
   frequency?: RecurrenceFrequency;
   daysOfWeek?: number[];
+  dayOfMonth?: number;
   executionTime?: string;
   startDate?: Date | string;
   endDate?: Date | string;

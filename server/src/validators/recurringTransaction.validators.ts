@@ -20,6 +20,7 @@ export const createRecurringTransactionSchema = z.object({
     note: z.string().trim().max(280).optional(),
     frequency: z.enum(['daily', 'weekly', 'biweekly', 'monthly', 'yearly']),
     daysOfWeek: z.array(z.number().int().min(0).max(6)).optional().default([]),
+    dayOfMonth: z.number().int().min(1).max(31).optional(),
     executionTime: z
       .string()
       .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'executionTime must be HH:MM')
@@ -41,6 +42,7 @@ export const updateRecurringTransactionSchema = z.object({
       note: z.string().trim().max(280).optional(),
       frequency: z.enum(['daily', 'weekly', 'biweekly', 'monthly', 'yearly']).optional(),
       daysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
+      dayOfMonth: z.number().int().min(1).max(31).optional(),
       executionTime: z
         .string()
         .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'executionTime must be HH:MM')

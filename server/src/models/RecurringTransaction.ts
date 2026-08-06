@@ -10,7 +10,8 @@ export interface IRecurringTransaction {
   purpose: string;       // what the transaction is for, e.g. "Rent", "Salary"
   note?: string;
   frequency: RecurrenceFrequency;
-  daysOfWeek: number[];  // 0=Sun…6=Sat; empty [] = fire every occurrence (no day filter)
+  daysOfWeek: number[];  // 0=Sun…6=Sat; for weekly/biweekly only; empty [] = fire every occurrence (no day filter)
+  dayOfMonth?: number;   // 1-31 for monthly (1-30/31 depending on month); null/undefined = use startDate's day
   executionTime: string; // "HH:MM" 24-hour; logical "fire time" used for backdating
   startDate: Date;
   endDate?: Date;
@@ -65,6 +66,13 @@ const recurringTransactionSchema = new Schema<IRecurringTransaction>(
       validate: {
         validator: (arr: number[]) => arr.every((d) => d >= 0 && d <= 6),
         message: 'daysOfWeek values must be 0 (Sun) through 6 (Sat)',
+      },
+    },
+    dayOfMonth: {
+      type: Number,
+      validate: {
+        validator: (v: number) => v >= 1 && v <= 31,
+        message: 'dayOfMonth must be 1 through 31',
       },
     },
     executionTime: {

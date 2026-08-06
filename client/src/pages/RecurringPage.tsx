@@ -42,6 +42,7 @@ function EditRecurringModal({
     endDate: recurring.endDate ? new Date(recurring.endDate).toISOString().split('T')[0] : '',
   });
   const [selectedDays, setSelectedDays] = useState<number[]>(recurring.daysOfWeek || []);
+  const [selectedDayOfMonth, setSelectedDayOfMonth] = useState<number | undefined>(recurring.dayOfMonth);
 
   const toggleDay = (day: number) => {
     setSelectedDays(prev =>
@@ -78,6 +79,7 @@ function EditRecurringModal({
       updateData.frequency = formData.frequency;
       updateData.executionTime = formData.executionTime;
       updateData.daysOfWeek = selectedDays; // Array of numbers 0-6
+      updateData.dayOfMonth = selectedDayOfMonth; // Day of month for monthly recurrence
       updateData.startDate = formData.startDate; // ISO date string
 
       // Optional note field
@@ -178,29 +180,49 @@ function EditRecurringModal({
             </select>
           </div>
 
-          {/* Days of Week */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Active Days <span className="text-muted-foreground font-normal">(empty = every occurrence)</span>
-            </label>
-            <div className="flex gap-1.5 flex-wrap">
-              {DAY_LABELS.map((label, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => toggleDay(idx)}
-                  className={cn(
-                    'w-10 h-10 rounded-full text-xs font-semibold transition-colors border-2',
-                    selectedDays.includes(idx)
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-muted text-muted-foreground border-transparent hover:border-primary/40'
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
+          {/* Conditionally show days of week for weekly/biweekly */}
+          {(formData.frequency === 'weekly' || formData.frequency === 'biweekly') && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Active Days <span className="text-muted-foreground font-normal">(empty = every occurrence)</span>
+              </label>
+              <div className="flex gap-1.5 flex-wrap">
+                {DAY_LABELS.map((label, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => toggleDay(idx)}
+                    className={cn(
+                      'w-10 h-10 rounded-full text-xs font-semibold transition-colors border-2',
+                      selectedDays.includes(idx)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-muted text-muted-foreground border-transparent hover:border-primary/40'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Day of month for monthly */}
+          {formData.frequency === 'monthly' && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Day of Month</label>
+              <select
+                value={selectedDayOfMonth ?? ''}
+                onChange={(e) => setSelectedDayOfMonth(e.target.value ? parseInt(e.target.value) : undefined)}
+                className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+              >
+                <option value="">Use start date's day</option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                  <option key={day} value={day}>{day}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">For months with fewer days, will use the last day</p>
+            </div>
+          )}
 
           {/* Execution Time */}
           <div>
