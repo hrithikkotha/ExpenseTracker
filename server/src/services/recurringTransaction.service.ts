@@ -211,8 +211,12 @@ export async function setNextOverrideAmount(
   return recurring;
 }
 
+// Global lock to prevent concurrent processing
+let isProcessing = false;
+
 /**
  * Lazy catch-up processor — called when the user opens the app.
+ * Uses a lock to prevent concurrent processing that could cause duplicates.
  *
  * For each active recurring transaction belonging to this user where
  * nextOccurrence is in the past, we backfill ALL missed occurrences:
@@ -222,126 +226,138 @@ export async function setNextOverrideAmount(
  *   - nextOccurrence advances until it is in the future (or past endDate)
  */
 export async function processPendingRecurringTransactions(userId: string): Promise<number> {
-  const now = new Date();
+  // Prevent concurrent processing
+  if (isProcessing) {
+    console.log('[processPendingRecurringTransactions] Already processing, skipping concurrent call');
+    return 0;
+  }
 
-  const dueTransactions = await RecurringTransaction.find({
-    user: userId,
-    isActive: true,
-    nextOccurrence: { $lte: now },
-    $or: [
-      { endDate: { $exists: false } },
-      { endDate: null },
-      { endDate: { $gte: now } },
-    ],
-  });
+  isProcessing = true;
 
-  console.log(`[processPendingRecurringTransactions] Now: ${now.toISOString()}, Found ${dueTransactions.length} due transactions`);
+  try {
+    const now = new Date();
 
-  let created = 0;
+    const dueTransactions = await RecurringTransaction.find({
+      user: userId,
+      isActive: true,
+      nextOccurrence: { $lte: now },
+      $or: [
+        { endDate: { $exists: false } },
+        { endDate: null },
+        { endDate: { $gte: now } },
+      ],
+    });
 
-  for (const recurring of dueTransactions) {
-    try {
-      console.log(`[Recurring ${recurring._id}] Processing: frequency=${recurring.frequency}, dayOfMonth=${recurring.dayOfMonth}, nextOccurrence=${recurring.nextOccurrence.toISOString()}`);
+    console.log(`[processPendingRecurringTransactions] Now: ${now.toISOString()}, Found ${dueTransactions.length} due transactions`);
 
-      let current = new Date(recurring.nextOccurrence);
-      let overrideConsumed = false;
-      let iterationCount = 0;
+    let created = 0;
 
-      while (current <= now) {
-        iterationCount++;
-        console.log(`  [Iteration ${iterationCount}] current=${current.toISOString()}, current.getDate()=${current.getDate()}`);
+    for (const recurring of dueTransactions) {
+      try {
+        console.log(`[Recurring ${recurring._id}] Processing: frequency=${recurring.frequency}, dayOfMonth=${recurring.dayOfMonth}, nextOccurrence=${recurring.nextOccurrence.toISOString()}`);
 
-        // Check endDate
-        if (recurring.endDate && current > recurring.endDate) {
-          console.log(`  [Iteration ${iterationCount}] Past endDate, breaking`);
-          recurring.isActive = false;
-          break;
-        }
+        let current = new Date(recurring.nextOccurrence);
+        let overrideConsumed = false;
+        let iterationCount = 0;
 
-        // Check daysOfWeek filter — 0=Sun … 6=Sat
-        const dayOfWeek = current.getDay();
-        const daysFilter = recurring.daysOfWeek ?? [];
-        const dayAllowed = daysFilter.length === 0 || daysFilter.includes(dayOfWeek);
+        while (current <= now) {
+          iterationCount++;
+          console.log(`  [Iteration ${iterationCount}] current=${current.toISOString()}, current.getDate()=${current.getDate()}`);
 
-        console.log(`  [Iteration ${iterationCount}] dayOfWeek=${dayOfWeek}, daysFilter=${JSON.stringify(daysFilter)}, dayAllowed=${dayAllowed}`);
+          // Check endDate
+          if (recurring.endDate && current > recurring.endDate) {
+            console.log(`  [Iteration ${iterationCount}] Past endDate, breaking`);
+            recurring.isActive = false;
+            break;
+          }
 
-        if (dayAllowed) {
-          // Determine amount: use override only on the first occurrence
-          const amount =
-            !overrideConsumed && recurring.nextOverrideAmount != null
-              ? recurring.nextOverrideAmount
-              : recurring.amount;
-          overrideConsumed = true;
+          // Check daysOfWeek filter — 0=Sun … 6=Sat
+          const dayOfWeek = current.getDay();
+          const daysFilter = recurring.daysOfWeek ?? [];
+          const dayAllowed = daysFilter.length === 0 || daysFilter.includes(dayOfWeek);
 
-          const transactionDate = occurrenceAt(current, recurring.executionTime);
+          console.log(`  [Iteration ${iterationCount}] dayOfWeek=${dayOfWeek}, daysFilter=${JSON.stringify(daysFilter)}, dayAllowed=${dayAllowed}`);
 
-          // Check if a transaction already exists for this date to prevent duplicates
-          const existingTransaction = await Transaction.findOne({
-            user: recurring.user,
-            account: recurring.account,
-            type: recurring.type,
-            purpose: recurring.purpose,
-            date: {
-              $gte: new Date(transactionDate.getTime() - 60000), // Within 1 minute
-              $lte: new Date(transactionDate.getTime() + 60000),
-            },
-          });
+          if (dayAllowed) {
+            // Determine amount: use override only on the first occurrence
+            const amount =
+              !overrideConsumed && recurring.nextOverrideAmount != null
+                ? recurring.nextOverrideAmount
+                : recurring.amount;
+            overrideConsumed = true;
 
-          if (existingTransaction) {
-            console.log(`  [Iteration ${iterationCount}] Transaction already exists for this date, skipping`);
-          } else {
-            console.log(`  [Iteration ${iterationCount}] Creating transaction for ${transactionDate.toISOString()} with amount ${amount}`);
+            const transactionDate = occurrenceAt(current, recurring.executionTime);
 
-            // Create the backdated transaction
-            await Transaction.create({
+            // Check if a transaction already exists for this date to prevent duplicates
+            const existingTransaction = await Transaction.findOne({
               user: recurring.user,
               account: recurring.account,
               type: recurring.type,
-              amount,
               purpose: recurring.purpose,
-              note: recurring.note,
-              date: transactionDate,
+              date: {
+                $gte: new Date(transactionDate.getTime() - 60000), // Within 1 minute
+                $lte: new Date(transactionDate.getTime() + 60000),
+              },
             });
 
-            // Update account balance
-            const delta = recurring.type === 'income' ? amount : -amount;
-            await Account.findByIdAndUpdate(recurring.account, {
-              $inc: { currentBalance: delta },
-            });
+            if (existingTransaction) {
+              console.log(`  [Iteration ${iterationCount}] Transaction already exists for this date, skipping`);
+            } else {
+              console.log(`  [Iteration ${iterationCount}] Creating transaction for ${transactionDate.toISOString()} with amount ${amount}`);
 
-            created++;
+              // Create the backdated transaction
+              await Transaction.create({
+                user: recurring.user,
+                account: recurring.account,
+                type: recurring.type,
+                amount,
+                purpose: recurring.purpose,
+                note: recurring.note,
+                date: transactionDate,
+              });
+
+              // Update account balance
+              const delta = recurring.type === 'income' ? amount : -amount;
+              await Account.findByIdAndUpdate(recurring.account, {
+                $inc: { currentBalance: delta },
+              });
+
+              created++;
+            }
+          } else {
+            console.log(`  [Iteration ${iterationCount}] Day not allowed, skipping`);
           }
-        } else {
-          console.log(`  [Iteration ${iterationCount}] Day not allowed, skipping`);
+
+          // Advance to next occurrence
+          const prevCurrent = new Date(current);
+          current = advanceByFrequency(current, recurring.frequency, recurring.dayOfMonth);
+          console.log(`  [Iteration ${iterationCount}] Advanced from ${prevCurrent.toISOString()} to ${current.toISOString()}`);
         }
 
-        // Advance to next occurrence
-        const prevCurrent = new Date(current);
-        current = advanceByFrequency(current, recurring.frequency, recurring.dayOfMonth);
-        console.log(`  [Iteration ${iterationCount}] Advanced from ${prevCurrent.toISOString()} to ${current.toISOString()}`);
+        console.log(`[Recurring ${recurring._id}] Completed: ${iterationCount} iterations, ${created} transactions created`);
+
+        // Clear the consumed override
+        if (overrideConsumed) {
+          recurring.nextOverrideAmount = undefined;
+        }
+
+        recurring.lastCreatedAt = new Date();
+        recurring.nextOccurrence = current;
+
+        // Deactivate if past end date
+        if (recurring.endDate && recurring.nextOccurrence > recurring.endDate) {
+          recurring.isActive = false;
+        }
+
+        await recurring.save();
+      } catch (error) {
+        console.error(`Failed to process recurring transaction ${recurring._id}:`, error);
       }
-
-      console.log(`[Recurring ${recurring._id}] Completed: ${iterationCount} iterations, ${created} transactions created`);
-
-      // Clear the consumed override
-      if (overrideConsumed) {
-        recurring.nextOverrideAmount = undefined;
-      }
-
-      recurring.lastCreatedAt = new Date();
-      recurring.nextOccurrence = current;
-
-      // Deactivate if past end date
-      if (recurring.endDate && recurring.nextOccurrence > recurring.endDate) {
-        recurring.isActive = false;
-      }
-
-      await recurring.save();
-    } catch (error) {
-      console.error(`Failed to process recurring transaction ${recurring._id}:`, error);
     }
-  }
 
-  console.log(`[processPendingRecurringTransactions] Total created: ${created}`);
-  return created;
+    console.log(`[processPendingRecurringTransactions] Total created: ${created}`);
+    return created;
+  } finally {
+    isProcessing = false;
+  }
 }
