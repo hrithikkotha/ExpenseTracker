@@ -14,20 +14,70 @@ import type {
 } from '../validators/recurringTransaction.validators';
 
 /**
- * Advance a date by one frequency interval, respecting dayOfMonth for monthly recurrence.
+ * Advance a date by one frequency interval, respecting dayOfMonth for monthly recurrence
+ * and daysOfWeek for weekly/biweekly recurrence.
  */
-function advanceByFrequency(date: Date, frequency: RecurrenceFrequency, dayOfMonth?: number): Date {
+function advanceByFrequency(
+  date: Date,
+  frequency: RecurrenceFrequency,
+  daysOfWeek?: number[],
+  dayOfMonth?: number
+): Date {
   const next = new Date(date);
   switch (frequency) {
     case 'daily':
       next.setDate(next.getDate() + 1);
       break;
-    case 'weekly':
-      next.setDate(next.getDate() + 7);
+    case 'weekly': {
+      if (daysOfWeek && daysOfWeek.length > 0) {
+        // Find the next day in daysOfWeek array
+        const currentDayOfWeek = next.getDay();
+        const sortedDays = [...daysOfWeek].sort((a, b) => a - b);
+
+        // Find the next day in daysOfWeek after current day
+        const nextDayInWeek = sortedDays.find(day => day > currentDayOfWeek);
+
+        if (nextDayInWeek !== undefined) {
+          // Next occurrence is later in the same week
+          const daysToAdd = nextDayInWeek - currentDayOfWeek;
+          next.setDate(next.getDate() + daysToAdd);
+        } else {
+          // Wrap to the first selected day of next week
+          const firstDay = sortedDays[0];
+          const daysToAdd = 7 - currentDayOfWeek + firstDay;
+          next.setDate(next.getDate() + daysToAdd);
+        }
+      } else {
+        // No specific days selected, advance by full week
+        next.setDate(next.getDate() + 7);
+      }
       break;
-    case 'biweekly':
-      next.setDate(next.getDate() + 14);
+    }
+    case 'biweekly': {
+      if (daysOfWeek && daysOfWeek.length > 0) {
+        const currentDayOfWeek = next.getDay();
+        const sortedDays = [...daysOfWeek].sort((a, b) => a - b);
+
+        // Find the next day in daysOfWeek after current day
+        const nextDayInWeek = sortedDays.find(day => day > currentDayOfWeek);
+
+        if (nextDayInWeek !== undefined) {
+          // Next occurrence is later in the same week
+          const daysToAdd = nextDayInWeek - currentDayOfWeek;
+          next.setDate(next.getDate() + daysToAdd);
+        } else {
+          // Wrap to the first selected day of the next biweekly period
+          // Skip one full week to maintain the biweekly cycle
+          const firstDay = sortedDays[0];
+          const daysToAdd = (7 - currentDayOfWeek + firstDay) + 7;
+          next.setDate(next.getDate() + daysToAdd);
+        }
+      } else {
+        // No specific days selected, advance by full 2 weeks
+        next.setDate(next.getDate() + 14);
+      }
       break;
+    }
     case 'monthly':
       // First, advance to next month
       const currentMonth = next.getMonth();
@@ -188,7 +238,12 @@ export async function skipNextOccurrence(
   const recurring = await RecurringTransaction.findOne({ _id: id, user: userId });
   if (!recurring) throw AppError.notFound('Recurring transaction not found');
 
-  recurring.nextOccurrence = advanceByFrequency(recurring.nextOccurrence, recurring.frequency);
+  recurring.nextOccurrence = advanceByFrequency(
+    recurring.nextOccurrence,
+    recurring.frequency,
+    recurring.daysOfWeek,
+    recurring.dayOfMonth
+  );
   await recurring.save();
   await recurring.populate('account', 'name icon color');
   return recurring;
@@ -330,7 +385,7 @@ export async function processPendingRecurringTransactions(userId: string): Promi
 
           // Advance to next occurrence
           const prevCurrent = new Date(current);
-          current = advanceByFrequency(current, recurring.frequency, recurring.dayOfMonth);
+          current = advanceByFrequency(current, recurring.frequency, recurring.daysOfWeek, recurring.dayOfMonth);
           console.log(`  [Iteration ${iterationCount}] Advanced from ${prevCurrent.toISOString()} to ${current.toISOString()}`);
         }
 
